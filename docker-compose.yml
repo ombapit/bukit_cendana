@@ -1,0 +1,83 @@
+version: "3.9"
+
+services:
+  # ============================================
+  # Uncomment blok di bawah untuk menjalankan
+  # app via Docker (mode production build).
+  # Pastikan DB_HOST=postgres dan REDIS_HOST=redis
+  # di .env jika menggunakan mode ini.
+  # ============================================
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: bukitcendana-app
+  #   ports:
+  #     - "8080:8080"
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   networks:
+  #     - bukitcendana-network
+
+  app:
+    build:
+      context: .
+      dockerfile: fe/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+    container_name: bukitcendana-fe
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+#   postgres:
+#     image: postgres:16-alpine
+#     container_name: bukitcendana-postgres
+#     environment:
+#       POSTGRES_USER: bukitcendana
+#       POSTGRES_PASSWORD: bukitcendana_pass
+#       POSTGRES_DB: bukitcendana
+#     ports:
+#       - "5433:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U bukitcendana"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 5
+#     restart: unless-stopped
+#     networks:
+#       - bukitcendana-network
+
+#   redis:
+#     image: redis:7-alpine
+#     container_name: bukitcendana-redis
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redis_data:/data
+#     healthcheck:
+#       test: ["CMD", "redis-cli", "ping"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 5
+#     restart: unless-stopped
+#     networks:
+#       - bukitcendana-network
+
+# volumes:
+#   postgres_data:
+#   redis_data:
+
+networks:
+  bukitcendana-network:
+    driver: bridge
