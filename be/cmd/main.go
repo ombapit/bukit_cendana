@@ -103,9 +103,6 @@ func main() {
 		c.Next()
 	})
 
-	// Serve uploaded files
-	r.Static("/uploads", "./uploads")
-
 	// Setup routes
 	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, iplHandler, financeHandler, authService)
 
