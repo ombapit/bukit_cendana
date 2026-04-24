@@ -11,6 +11,7 @@ interface TableProps<T> {
   data: T[];
   keyField?: string;
   emptyMessage?: string;
+  rowClassName?: (item: T) => string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,6 +20,7 @@ export function Table<T extends Record<string, any>>({
   data,
   keyField = "id",
   emptyMessage = "Tidak ada data",
+  rowClassName,
 }: TableProps<T>) {
   return (
     <div className="overflow-x-auto rounded-2xl glass">
@@ -41,7 +43,7 @@ export function Table<T extends Record<string, any>>({
             </tr>
           ) : (
             data.map((item) => (
-              <tr key={item[keyField] as string} className="hover:bg-white/30 dark:hover:bg-white/5 transition-colors">
+              <tr key={item[keyField] as string} className={`hover:bg-white/30 dark:hover:bg-white/5 transition-colors ${rowClassName?.(item) ?? ""}`}>
                 {columns.map((col) => (
                   <td key={col.key} className="px-4 py-3 text-sm text-gray-900 dark:text-slate-200">
                     {col.render ? col.render(item) : (item[col.key] as ReactNode)}
