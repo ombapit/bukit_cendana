@@ -140,7 +140,7 @@ export default function WargaPage() {
     },
     {
       key: "last_payment",
-      header: "Pembayaran Terakhir",
+      header: "Pembayaran IPL Terakhir",
       render: (w: WargaWithLastPayment) => (
         <span className="text-gray-900 dark:text-white">
           {formatTanggalIPL(w.last_payment)}
