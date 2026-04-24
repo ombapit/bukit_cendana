@@ -84,6 +84,7 @@ func (r *FinanceRepository) Update(f *models.Finance) error {
 		"kategori":       f.Kategori,
 		"debit":          f.Debit,
 		"kredit":         f.Kredit,
+		"gambar":         f.Gambar,
 		"tanggal":        f.Tanggal,
 		"updated_at":     time.Now(),
 	}).Error

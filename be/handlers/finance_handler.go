@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"247-golang-api/models"
 	"247-golang-api/services"
@@ -18,6 +22,31 @@ type FinanceHandler struct {
 
 func NewFinanceHandler(financeService *services.FinanceService) *FinanceHandler {
 	return &FinanceHandler{financeService: financeService}
+}
+
+func saveFinanceFile(c *gin.Context, field string) string {
+	file, header, err := c.Request.FormFile(field)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	filename := uuid.New().String() + ext
+	dirPath := filepath.Join("uploads", "finance")
+	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
+		return ""
+	}
+	dstPath := filepath.Join(dirPath, filename)
+	out, err := os.Create(dstPath)
+	if err != nil {
+		return ""
+	}
+	defer out.Close()
+	if _, err := io.Copy(out, file); err != nil {
+		return ""
+	}
+	return "/" + strings.ReplaceAll(dstPath, string(os.PathSeparator), "/")
 }
 
 func (h *FinanceHandler) FindAll(c *gin.Context) {
@@ -67,10 +96,22 @@ func (h *FinanceHandler) FindByID(c *gin.Context) {
 }
 
 func (h *FinanceHandler) Create(c *gin.Context) {
-	var req models.CreateFinanceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+	namaTransaksi := c.PostForm("nama_transaksi")
+	if namaTransaksi == "" {
+		utils.ErrorResponse(c, http.StatusBadRequest, "nama_transaksi is required")
 		return
+	}
+	debit, _ := strconv.ParseFloat(c.PostForm("debit"), 64)
+	kredit, _ := strconv.ParseFloat(c.PostForm("kredit"), 64)
+
+	req := models.CreateFinanceRequest{
+		NamaTransaksi: namaTransaksi,
+		Deskripsi:     c.PostForm("deskripsi"),
+		Kategori:      c.PostForm("kategori"),
+		Debit:         debit,
+		Kredit:        kredit,
+		Tanggal:       c.PostForm("timestamp"),
+		Gambar:        saveFinanceFile(c, "gambar"),
 	}
 	f, err := h.financeService.Create(req)
 	if err != nil {
@@ -86,10 +127,17 @@ func (h *FinanceHandler) Update(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid ID")
 		return
 	}
-	var req models.UpdateFinanceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
-		return
+	debit, _ := strconv.ParseFloat(c.PostForm("debit"), 64)
+	kredit, _ := strconv.ParseFloat(c.PostForm("kredit"), 64)
+
+	req := models.UpdateFinanceRequest{
+		NamaTransaksi: c.PostForm("nama_transaksi"),
+		Deskripsi:     c.PostForm("deskripsi"),
+		Kategori:      c.PostForm("kategori"),
+		Debit:         debit,
+		Kredit:        kredit,
+		Tanggal:       c.PostForm("timestamp"),
+		Gambar:        saveFinanceFile(c, "gambar"),
 	}
 	f, err := h.financeService.Update(id, req)
 	if err != nil {

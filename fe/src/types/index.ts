@@ -200,6 +200,7 @@ export interface Finance {
   kategori: string;
   debit: number;
   kredit: number;
+  gambar: string;
   referensi_id?: string;
   referensi_tipe: string;
   timestamp: string;

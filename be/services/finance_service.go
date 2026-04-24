@@ -31,6 +31,7 @@ func (s *FinanceService) Create(req models.CreateFinanceRequest) (*models.Financ
 		Kategori:      req.Kategori,
 		Debit:         req.Debit,
 		Kredit:        req.Kredit,
+		Gambar:        req.Gambar,
 		Tanggal:       time.Now(),
 	}
 	if req.Tanggal != "" {
@@ -65,6 +66,9 @@ func (s *FinanceService) Update(id uuid.UUID, req models.UpdateFinanceRequest) (
 	f.Kategori = req.Kategori
 	f.Debit = req.Debit
 	f.Kredit = req.Kredit
+	if req.Gambar != "" {
+		f.Gambar = req.Gambar
+	}
 	if req.Tanggal != "" {
 		if t, err := time.Parse("2006-01-02", req.Tanggal); err == nil {
 			f.Tanggal = t

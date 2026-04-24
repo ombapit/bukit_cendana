@@ -195,7 +195,7 @@ export default function LaporanPage() {
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{r.nama_transaksi}</p>
                       {r.deskripsi && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{r.deskripsi}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{r.deskripsi}</p>
                       )}
                     </div>
                     {r.kategori && (
@@ -244,7 +244,7 @@ export default function LaporanPage() {
                         <td className="px-4 py-3">
                           <p className="font-medium text-gray-900 dark:text-white">{r.nama_transaksi}</p>
                           {r.deskripsi && (
-                            <p className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[220px]">{r.deskripsi}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{r.deskripsi}</p>
                           )}
                         </td>
                         <td className="px-4 py-3">

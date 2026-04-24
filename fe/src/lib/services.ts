@@ -3,8 +3,6 @@ import type {
   APIResponse,
   Finance,
   FinanceSummary,
-  CreateFinanceRequest,
-  UpdateFinanceRequest,
   LoginRequest,
   LoginResponse,
   CreateUserRequest,
@@ -166,11 +164,15 @@ export const financeService = {
     return api.get<APIResponse<FinanceSummary>>(url);
   },
 
-  create: (data: CreateFinanceRequest) =>
-    api.post<APIResponse<Finance>>("/finance", data),
+  create: (data: FormData) =>
+    api.post<APIResponse<Finance>>("/finance", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 
-  update: (id: string, data: UpdateFinanceRequest) =>
-    api.put<APIResponse<Finance>>(`/finance/${id}`, data),
+  update: (id: string, data: FormData) =>
+    api.put<APIResponse<Finance>>(`/finance/${id}`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 
   delete: (id: string) =>
     api.delete<APIResponse>(`/finance/${id}`),

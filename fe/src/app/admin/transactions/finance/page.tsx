@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { financeService } from "@/lib/services";
 import { exportXLS } from "@/lib/export";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,15 @@ import {
 } from "lucide-react";
 
 const KATEGORI_LIST = ["IPL", "Operasional", "Keamanan", "Kebersihan", "Perawatan", "Lain-lain"];
+
+const inputClass = "w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
+const fileInputClass = "w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-red-700/10 file:text-red-700 dark:file:text-red-400 dark:file:bg-red-700/20 hover:file:bg-red-700/20 cursor-pointer";
+
+function getImageURL(gambar: string): string {
+  if (!gambar) return "";
+  const base = (process.env.NEXT_PUBLIC_API_URL ?? "").replace("/api/v1", "");
+  return `${base}${gambar}`;
+}
 
 function formatRp(value: number): string {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(value);
@@ -59,15 +68,19 @@ export default function FinancePage() {
   // Create
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState(emptyForm);
+  const [createGambar, setCreateGambar] = useState<File | null>(null);
   const [createError, setCreateError] = useState("");
   const [creating, setCreating] = useState(false);
+  const createFileRef = useRef<HTMLInputElement>(null);
 
   // Edit
   const [editOpen, setEditOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Finance | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
+  const [editGambar, setEditGambar] = useState<File | null>(null);
   const [editError, setEditError] = useState("");
   const [editing, setEditing] = useState(false);
+  const editFileRef = useRef<HTMLInputElement>(null);
 
   // Delete
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -139,6 +152,8 @@ export default function FinancePage() {
   // ========== Create ==========
   const openCreate = () => {
     setCreateForm({ ...emptyForm, timestamp: todayStr() });
+    setCreateGambar(null);
+    if (createFileRef.current) createFileRef.current.value = "";
     setCreateError("");
     setCreateOpen(true);
   };
@@ -151,15 +166,18 @@ export default function FinancePage() {
     setCreating(true);
     setCreateError("");
     try {
-      await financeService.create({
-        nama_transaksi: createForm.nama_transaksi.trim(),
-        deskripsi: createForm.deskripsi.trim(),
-        kategori: createForm.kategori,
-        debit: parseFloat(createForm.debit) || 0,
-        kredit: parseFloat(createForm.kredit) || 0,
-        timestamp: createForm.timestamp,
-      });
+      const fd = new FormData();
+      fd.append("nama_transaksi", createForm.nama_transaksi.trim());
+      fd.append("deskripsi", createForm.deskripsi.trim());
+      fd.append("kategori", createForm.kategori);
+      fd.append("debit", String(parseFloat(createForm.debit) || 0));
+      fd.append("kredit", String(parseFloat(createForm.kredit) || 0));
+      fd.append("timestamp", createForm.timestamp);
+      if (createGambar) fd.append("gambar", createGambar);
+      await financeService.create(fd);
       setCreateOpen(false);
+      setCreateGambar(null);
+      if (createFileRef.current) createFileRef.current.value = "";
       showSuccess("Transaksi berhasil ditambahkan");
       fetchRecords();
     } catch { setCreateError("Gagal menambahkan transaksi"); }
@@ -177,6 +195,8 @@ export default function FinancePage() {
       kredit: String(r.kredit),
       timestamp: isoToDateInput(r.timestamp),
     });
+    setEditGambar(null);
+    if (editFileRef.current) editFileRef.current.value = "";
     setEditError("");
     setEditOpen(true);
   };
@@ -187,15 +207,18 @@ export default function FinancePage() {
     setEditing(true);
     setEditError("");
     try {
-      await financeService.update(editingRecord.id, {
-        nama_transaksi: editForm.nama_transaksi.trim(),
-        deskripsi: editForm.deskripsi.trim(),
-        kategori: editForm.kategori,
-        debit: parseFloat(editForm.debit) || 0,
-        kredit: parseFloat(editForm.kredit) || 0,
-        timestamp: editForm.timestamp,
-      });
+      const fd = new FormData();
+      fd.append("nama_transaksi", editForm.nama_transaksi.trim());
+      fd.append("deskripsi", editForm.deskripsi.trim());
+      fd.append("kategori", editForm.kategori);
+      fd.append("debit", String(parseFloat(editForm.debit) || 0));
+      fd.append("kredit", String(parseFloat(editForm.kredit) || 0));
+      fd.append("timestamp", editForm.timestamp);
+      if (editGambar) fd.append("gambar", editGambar);
+      await financeService.update(editingRecord.id, fd);
       setEditOpen(false);
+      setEditGambar(null);
+      if (editFileRef.current) editFileRef.current.value = "";
       showSuccess("Transaksi berhasil diperbarui");
       fetchRecords();
     } catch { setEditError("Gagal memperbarui transaksi"); }
@@ -232,7 +255,7 @@ export default function FinancePage() {
       render: (r: Finance) => (
         <div>
           <p className="font-medium text-gray-900 dark:text-white text-sm">{r.nama_transaksi}</p>
-          {r.deskripsi && <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{r.deskripsi}</p>}
+          {r.deskripsi && <p className="text-xs text-gray-500 dark:text-gray-400">{r.deskripsi}</p>}
         </div>
       ),
     },
@@ -253,6 +276,15 @@ export default function FinancePage() {
           )}
         </div>
       ),
+    },
+    {
+      key: "gambar",
+      header: "Bukti",
+      render: (r: Finance) => r.gambar ? (
+        <a href={getImageURL(r.gambar)} target="_blank" rel="noopener noreferrer">
+          <img src={getImageURL(r.gambar)} alt="bukti" className="h-9 w-14 object-cover rounded border border-white/20 hover:opacity-80 transition-opacity" />
+        </a>
+      ) : <span className="text-gray-300 dark:text-gray-600 text-sm">—</span>,
     },
     {
       key: "kredit",
@@ -283,64 +315,6 @@ export default function FinancePage() {
       ),
     },
   ];
-
-  const FormFields = ({ form, setForm, error }: {
-    form: typeof emptyForm;
-    setForm: (f: typeof emptyForm) => void;
-    error: string;
-  }) => (
-    <div className="space-y-4">
-      {error && (
-        <div className="bg-rose-500/10 text-rose-700 dark:text-rose-400 text-sm p-3 rounded-xl border border-rose-500/20">{error}</div>
-      )}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Nama Transaksi <span className="text-red-500">*</span>
-        </label>
-        <input type="text" value={form.nama_transaksi}
-          onChange={(e) => setForm({ ...form, nama_transaksi: e.target.value })}
-          className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kategori</label>
-          <select value={form.kategori} onChange={(e) => setForm({ ...form, kategori: e.target.value })}
-            className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">-- Pilih --</option>
-            {KATEGORI_LIST.map((k) => <option key={k} value={k}>{k}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanggal</label>
-          <input type="date" value={form.timestamp} onChange={(e) => setForm({ ...form, timestamp: e.target.value })}
-            className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pemasukan / Kredit (Rp)</label>
-          <input type="number" min="0" value={form.kredit} onChange={(e) => setForm({ ...form, kredit: e.target.value })}
-            placeholder="0"
-            className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pengeluaran / Debit (Rp)</label>
-          <input type="number" min="0" value={form.debit} onChange={(e) => setForm({ ...form, debit: e.target.value })}
-            placeholder="0"
-            className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deskripsi</label>
-        <textarea rows={3} value={form.deskripsi} onChange={(e) => setForm({ ...form, deskripsi: e.target.value })}
-          className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-        />
-      </div>
-    </div>
-  );
 
   return (
     <div>
@@ -452,7 +426,7 @@ export default function FinancePage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{r.nama_transaksi}</p>
-                      {r.deskripsi && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{r.deskripsi}</p>}
+                      {r.deskripsi && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{r.deskripsi}</p>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => openEdit(r)} className="p-1.5 rounded-lg hover:bg-white/40 dark:hover:bg-white/5 transition-colors" title="Edit">
@@ -483,6 +457,11 @@ export default function FinancePage() {
                       {r.debit > 0 && <p className="text-sm font-semibold text-red-600 dark:text-red-400">− {formatRp(r.debit)}</p>}
                     </div>
                   </div>
+                  {r.gambar && (
+                    <a href={getImageURL(r.gambar)} target="_blank" rel="noopener noreferrer" className="mt-3 block">
+                      <img src={getImageURL(r.gambar)} alt="bukti" className="w-full h-32 object-cover rounded-lg border border-white/20 hover:opacity-80 transition-opacity" />
+                    </a>
+                  )}
                 </div>
               ))
             )}
@@ -521,7 +500,46 @@ export default function FinancePage() {
       {/* Modal: Create */}
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Tambah Transaksi" size="md">
         <div className="space-y-4">
-          <FormFields form={createForm} setForm={setCreateForm} error={createError} />
+          {createError && <div className="bg-rose-500/10 text-rose-700 dark:text-rose-400 text-sm p-3 rounded-xl border border-rose-500/20">{createError}</div>}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Transaksi <span className="text-red-500">*</span></label>
+            <input type="text" value={createForm.nama_transaksi} onChange={(e) => setCreateForm({ ...createForm, nama_transaksi: e.target.value })} className={inputClass} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kategori</label>
+              <select value={createForm.kategori} onChange={(e) => setCreateForm({ ...createForm, kategori: e.target.value })} className={inputClass}>
+                <option value="">-- Pilih --</option>
+                {KATEGORI_LIST.map((k) => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanggal</label>
+              <input type="date" value={createForm.timestamp} onChange={(e) => setCreateForm({ ...createForm, timestamp: e.target.value })} className={inputClass} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pemasukan / Kredit (Rp)</label>
+              <input type="number" min="0" value={createForm.kredit} onChange={(e) => setCreateForm({ ...createForm, kredit: e.target.value })} placeholder="0" className={inputClass} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pengeluaran / Debit (Rp)</label>
+              <input type="number" min="0" value={createForm.debit} onChange={(e) => setCreateForm({ ...createForm, debit: e.target.value })} placeholder="0" className={inputClass} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deskripsi</label>
+            <textarea rows={3} value={createForm.deskripsi} onChange={(e) => setCreateForm({ ...createForm, deskripsi: e.target.value })} className={`${inputClass} resize-none`} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bukti / Gambar</label>
+            <input
+              ref={createFileRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => setCreateGambar(e.target.files?.[0] ?? null)}
+              className={fileInputClass}
+            />
+          </div>
           <div className="flex justify-end gap-2 pt-4 border-t border-white/20 dark:border-white/10">
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Batal</Button>
             <Button onClick={handleCreate} loading={creating}>Simpan</Button>
@@ -537,7 +555,54 @@ export default function FinancePage() {
               Transaksi ini dibuat otomatis dari pembayaran IPL.
             </div>
           )}
-          <FormFields form={editForm} setForm={setEditForm} error={editError} />
+          {editError && <div className="bg-rose-500/10 text-rose-700 dark:text-rose-400 text-sm p-3 rounded-xl border border-rose-500/20">{editError}</div>}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Transaksi <span className="text-red-500">*</span></label>
+            <input type="text" value={editForm.nama_transaksi} onChange={(e) => setEditForm({ ...editForm, nama_transaksi: e.target.value })} className={inputClass} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kategori</label>
+              <select value={editForm.kategori} onChange={(e) => setEditForm({ ...editForm, kategori: e.target.value })} className={inputClass}>
+                <option value="">-- Pilih --</option>
+                {KATEGORI_LIST.map((k) => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanggal</label>
+              <input type="date" value={editForm.timestamp} onChange={(e) => setEditForm({ ...editForm, timestamp: e.target.value })} className={inputClass} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pemasukan / Kredit (Rp)</label>
+              <input type="number" min="0" value={editForm.kredit} onChange={(e) => setEditForm({ ...editForm, kredit: e.target.value })} placeholder="0" className={inputClass} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pengeluaran / Debit (Rp)</label>
+              <input type="number" min="0" value={editForm.debit} onChange={(e) => setEditForm({ ...editForm, debit: e.target.value })} placeholder="0" className={inputClass} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deskripsi</label>
+            <textarea rows={3} value={editForm.deskripsi} onChange={(e) => setEditForm({ ...editForm, deskripsi: e.target.value })} className={`${inputClass} resize-none`} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bukti / Gambar</label>
+            {editingRecord?.gambar && !editGambar && (
+              <div className="mb-2">
+                <a href={getImageURL(editingRecord.gambar)} target="_blank" rel="noopener noreferrer">
+                  <img src={getImageURL(editingRecord.gambar)} alt="bukti saat ini" className="h-24 object-cover rounded-lg border border-white/20 hover:opacity-80 transition-opacity" />
+                </a>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Gambar saat ini. Upload baru untuk mengganti.</p>
+              </div>
+            )}
+            <input
+              ref={editFileRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => setEditGambar(e.target.files?.[0] ?? null)}
+              className={fileInputClass}
+            />
+          </div>
           <div className="flex justify-end gap-2 pt-4 border-t border-white/20 dark:border-white/10">
             <Button variant="outline" onClick={() => setEditOpen(false)}>Batal</Button>
             <Button onClick={handleEdit} loading={editing}>Simpan Perubahan</Button>

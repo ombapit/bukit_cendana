@@ -13,6 +13,7 @@ type Finance struct {
 	Kategori      string     `gorm:"type:varchar(100);column:kategori" json:"kategori"`
 	Debit         float64    `gorm:"type:decimal(15,2);default:0;column:debit" json:"debit"`
 	Kredit        float64    `gorm:"type:decimal(15,2);default:0;column:kredit" json:"kredit"`
+	Gambar        string     `gorm:"type:varchar(500);column:gambar" json:"gambar"`
 	ReferensiID   *uuid.UUID `gorm:"type:uuid;column:referensi_id" json:"referensi_id"`
 	ReferensiTipe string     `gorm:"type:varchar(50);column:referensi_tipe" json:"referensi_tipe"`
 	Tanggal       time.Time  `gorm:"not null;default:now();column:tanggal" json:"timestamp"`
@@ -29,19 +30,21 @@ type FinanceSummary struct {
 }
 
 type CreateFinanceRequest struct {
-	NamaTransaksi string  `json:"nama_transaksi" binding:"required"`
-	Deskripsi     string  `json:"deskripsi"`
-	Kategori      string  `json:"kategori"`
-	Debit         float64 `json:"debit"`
-	Kredit        float64 `json:"kredit"`
-	Tanggal       string  `json:"timestamp"` // YYYY-MM-DD from client
+	NamaTransaksi string  `form:"nama_transaksi"`
+	Deskripsi     string  `form:"deskripsi"`
+	Kategori      string  `form:"kategori"`
+	Debit         float64 `form:"debit"`
+	Kredit        float64 `form:"kredit"`
+	Tanggal       string  `form:"timestamp"`
+	Gambar        string  `form:"-"`
 }
 
 type UpdateFinanceRequest struct {
-	NamaTransaksi string  `json:"nama_transaksi"`
-	Deskripsi     string  `json:"deskripsi"`
-	Kategori      string  `json:"kategori"`
-	Debit         float64 `json:"debit"`
-	Kredit        float64 `json:"kredit"`
-	Tanggal       string  `json:"timestamp"` // YYYY-MM-DD from client
+	NamaTransaksi string  `form:"nama_transaksi"`
+	Deskripsi     string  `form:"deskripsi"`
+	Kategori      string  `form:"kategori"`
+	Debit         float64 `form:"debit"`
+	Kredit        float64 `form:"kredit"`
+	Tanggal       string  `form:"timestamp"`
+	Gambar        string  `form:"-"`
 }
