@@ -20,6 +20,8 @@ COPY --from=builder /app/main .
 COPY --from=builder /app/.env .
 COPY --from=builder /app/migrations ./migrations
 
+RUN mkdir -p uploads/ipls uploads/finance
+
 EXPOSE 8080
 
 CMD ["./main"]
