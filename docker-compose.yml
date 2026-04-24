@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ============================================
   # Uncomment blok di bawah untuk menjalankan
@@ -7,33 +5,33 @@ services:
   # Pastikan DB_HOST=postgres dan REDIS_HOST=redis
   # di .env jika menggunakan mode ini.
   # ============================================
-  # app:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   container_name: bukitcendana-app
-  #   ports:
-  #     - "8080:8080"
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   restart: unless-stopped
-  #   networks:
-  #     - bukitcendana-network
+  api:
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+    container_name: bukitcendana-be
+    ports:
+      - "8082:8080"
+    env_file:
+      - be/.env
+        #    depends_on:
+        #postgres:
+        #condition: service_healthy
+        #redis:
+        #condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bukitcendana-network
 
   app:
     build:
-      context: .
-      dockerfile: fe/Dockerfile
+      context: ./fe
+      dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+        NEXT_PUBLIC_API_URL: https://bukitcendana.my.id/api/v1
     container_name: bukitcendana-fe
     ports:
-      - "3000:3000"
+      - "3006:3000"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
