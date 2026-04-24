@@ -367,7 +367,7 @@ export default function IPLListPage() {
 
       {/* Search */}
       <div className="mb-4">
-        <div className="relative max-w-sm">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
@@ -386,10 +386,60 @@ export default function IPLListPage() {
         </div>
       ) : (
         <>
-          <Table columns={columns} data={ipls} />
+          {/* Mobile: cards */}
+          <div className="lg:hidden space-y-3">
+            {ipls.length === 0 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">Tidak ada data</p>
+            ) : (
+              ipls.map((ipl) => (
+                <div key={ipl.id} className="glass rounded-xl p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-900 dark:text-white truncate">{ipl.warga_nama}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-red-700/10 text-red-700 dark:bg-red-700/20 dark:text-red-400 font-medium">{ipl.warga_blok}</span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => openEdit(ipl)} className="p-1.5 rounded-lg hover:bg-white/40 dark:hover:bg-white/5 transition-colors" title="Edit">
+                        <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                      </button>
+                      <button onClick={() => openDelete(ipl)} className="p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors" title="Hapus">
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-white/20 dark:border-white/5">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Periode IPL</p>
+                      <p className="text-sm font-medium text-red-700 dark:text-red-400">{formatTanggalIPL(ipl.tanggal_ipl)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Tanggal Input</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {new Date(ipl.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
+                      </p>
+                    </div>
+                  </div>
+                  {ipl.gambar ? (
+                    <a href={getImageURL(ipl.gambar)} target="_blank" rel="noopener noreferrer" className="inline-block mt-3">
+                      <img src={getImageURL(ipl.gambar)} alt="Bukti IPL" className="h-16 w-auto rounded-lg border border-white/20 dark:border-white/10 object-cover" />
+                    </a>
+                  ) : (
+                    <p className="flex items-center gap-1 mt-3 text-xs text-gray-400 dark:text-gray-500">
+                      <ImageIcon className="w-3.5 h-3.5" /> Tidak ada bukti
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden lg:block">
+            <Table columns={columns} data={ipls} />
+          </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 gap-3">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Menampilkan {total === 0 ? 0 : (page - 1) * limit + 1}–{Math.min(page * limit, total)} dari {total}
             </p>
@@ -401,12 +451,7 @@ export default function IPLListPage() {
                 p === "..." ? (
                   <span key={`ellipsis-${i}`} className="px-1 text-sm text-gray-400 dark:text-gray-500">...</span>
                 ) : (
-                  <Button
-                    key={p}
-                    variant={page === p ? "primary" : "outline"}
-                    size="sm"
-                    onClick={() => setPage(p as number)}
-                  >
+                  <Button key={p} variant={page === p ? "primary" : "outline"} size="sm" onClick={() => setPage(p as number)}>
                     {p}
                   </Button>
                 )

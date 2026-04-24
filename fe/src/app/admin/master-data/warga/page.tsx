@@ -271,7 +271,7 @@ export default function WargaAdminPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Data Warga</h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
@@ -298,7 +298,7 @@ export default function WargaAdminPage() {
 
       {/* Search */}
       <div className="mb-4">
-        <div className="relative max-w-sm">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
@@ -317,7 +317,47 @@ export default function WargaAdminPage() {
         </div>
       ) : (
         <>
-          <Table columns={columns} data={filtered} />
+          {/* Mobile: cards */}
+          <div className="lg:hidden space-y-3">
+            {filtered.length === 0 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">Tidak ada data</p>
+            ) : (
+              filtered.map((w) => (
+                <div key={w.id} className="glass rounded-xl p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-900 dark:text-white truncate">{w.nama}</p>
+                      {w.no_telp && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{w.no_telp}</p>}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => openEdit(w)} className="p-1.5 rounded-lg hover:bg-white/40 dark:hover:bg-white/5 transition-colors" title="Edit">
+                        <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                      </button>
+                      <button onClick={() => openDelete(w)} className="p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors" title="Hapus">
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </button>
+                    </div>
+                  </div>
+                  <span className="inline-block mt-2 px-2 py-0.5 text-xs rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">{w.blok}</span>
+                  <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-white/20 dark:border-white/5">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Iuran/Bulan</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{formatIuran(w.iuran)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Bayar Terakhir</p>
+                      <p className={`text-sm ${w.last_payment ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"}`}>{formatLastPayment(w.last_payment)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden lg:block">
+            <Table columns={columns} data={filtered} />
+          </div>
 
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
             {filtered.length === total

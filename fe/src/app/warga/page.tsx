@@ -81,7 +81,7 @@ export default function WargaPage() {
       key: "blok",
       header: "Blok",
       render: (w: WargaWithLastPayment) => (
-        <span className="px-2 py-1 bg-red-700/10 text-red-700 dark:bg-red-700/20 dark:text-red-400 rounded text-sm">
+        <span className="px-2 py-1 bg-red-700/10 text-red-700 dark:bg-red-700/20 dark:text-red-400 rounded text-sm whitespace-nowrap">
           {w.blok}
         </span>
       ),
@@ -123,8 +123,8 @@ export default function WargaPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3 mb-4">
-          <div className="relative flex-1 min-w-48">
+        <div className="grid grid-cols-2 lg:flex gap-3 mb-4">
+          <div className="col-span-2 lg:flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
@@ -137,7 +137,7 @@ export default function WargaPage() {
           <select
             value={blokFilter}
             onChange={(e) => setBlokFilter(e.target.value)}
-            className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white"
+            className="min-w-0 lg:w-auto px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white"
           >
             <option value="">Semua Blok</option>
             {allBlocks.map((blok) => (
@@ -147,7 +147,7 @@ export default function WargaPage() {
           <select
             value={tunggakanFilter}
             onChange={(e) => setTunggakanFilter(e.target.value)}
-            className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white"
+            className="min-w-0 lg:w-auto px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white"
           >
             <option value="">Semua Pembayaran</option>
             <option value="2">Tunggakan &gt; 2 Bulan</option>
@@ -162,9 +162,46 @@ export default function WargaPage() {
           </div>
         ) : (
           <>
-            <div className="glass rounded-2xl overflow-hidden">
+            {/* Mobile & tablet: card list */}
+            <div className="lg:hidden space-y-3">
+              {filteredWarga.length === 0 ? (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-8">Tidak ada data</p>
+              ) : (
+                filteredWarga.map((w) => (
+                  <div key={w.id} className="glass rounded-xl p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-gray-900 dark:text-white truncate">{w.nama}</p>
+                        {w.no_telp && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{w.no_telp}</p>
+                        )}
+                      </div>
+                      <span className="shrink-0 px-2.5 py-1 bg-red-700/10 text-red-700 dark:bg-red-700/20 dark:text-red-400 rounded-md text-xs font-semibold whitespace-nowrap">
+                        {w.blok}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-white/20 dark:border-white/5">
+                      <div className="min-w-0">
+                        <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Iuran/Bulan</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {w.iuran > 0 ? `Rp ${w.iuran.toLocaleString("id-ID")}` : "-"}
+                        </p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Bayar Terakhir</p>
+                        <p className="text-sm text-gray-900 dark:text-white truncate">{formatTanggalIPL(w.last_payment)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden lg:block glass rounded-2xl overflow-hidden">
               <Table columns={columns} data={filteredWarga} />
             </div>
+
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
               Menampilkan {filteredWarga.length} dari {warga.length} warga
             </p>

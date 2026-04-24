@@ -345,7 +345,7 @@ export default function FinancePage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pemasukan & Pengeluaran</h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{total} transaksi tercatat</p>
@@ -368,7 +368,7 @@ export default function FinancePage() {
 
       {/* Summary cards */}
       {summary && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="glass rounded-2xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -402,35 +402,35 @@ export default function FinancePage() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <div className="relative flex-1 min-w-48">
+      <div className="flex flex-col gap-3 mb-4">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
           <input type="text" placeholder="Cari transaksi, kategori..."
             value={search} onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent backdrop-blur-sm dark:text-slate-100 dark:placeholder:text-gray-500"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
             <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Dari</label>
             <input type="date" value={dateFrom} max={dateTo || undefined}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-auto px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
             <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Sampai</label>
             <input type="date" value={dateTo} min={dateFrom || undefined}
               onChange={(e) => setDateTo(e.target.value)}
-              className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-auto px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <button
             onClick={() => { setDateFrom(firstOfMonthStr()); setDateTo(todayStr()); }}
-            className="text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors whitespace-nowrap"
+            className="col-span-2 sm:col-auto text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors whitespace-nowrap text-center sm:text-left"
             title="Reset ke bulan berjalan"
           >
-            ↺ Reset
+            ↺ Reset ke bulan ini
           </button>
         </div>
       </div>
@@ -442,8 +442,58 @@ export default function FinancePage() {
         </div>
       ) : (
         <>
-          <Table columns={columns} data={records} />
-          <div className="flex items-center justify-between mt-4">
+          {/* Mobile: cards */}
+          <div className="lg:hidden space-y-3">
+            {records.length === 0 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">Tidak ada data</p>
+            ) : (
+              records.map((r) => (
+                <div key={r.id} className="glass rounded-xl p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{r.nama_transaksi}</p>
+                      {r.deskripsi && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{r.deskripsi}</p>}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => openEdit(r)} className="p-1.5 rounded-lg hover:bg-white/40 dark:hover:bg-white/5 transition-colors" title="Edit">
+                        <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                      </button>
+                      <button onClick={() => openDelete(r)} className="p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors" title="Hapus">
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </button>
+                    </div>
+                  </div>
+                  {(r.kategori || r.referensi_tipe === "ipl") && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {r.kategori && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400">{r.kategori}</span>
+                      )}
+                      {r.referensi_tipe === "ipl" && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-400">auto-IPL</span>
+                      )}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-white/20 dark:border-white/5">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Tanggal</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{formatTanggal(r.timestamp)}</p>
+                    </div>
+                    <div className="text-right">
+                      {r.kredit > 0 && <p className="text-sm font-semibold text-green-600 dark:text-green-400">+ {formatRp(r.kredit)}</p>}
+                      {r.debit > 0 && <p className="text-sm font-semibold text-red-600 dark:text-red-400">− {formatRp(r.debit)}</p>}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden lg:block">
+            <Table columns={columns} data={records} />
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 gap-3">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Menampilkan {total === 0 ? 0 : (page - 1) * limit + 1}–{Math.min(page * limit, total)} dari {total}
             </p>

@@ -130,9 +130,9 @@ export default function LaporanPage() {
         )}
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-3 mb-4">
+        <div className="flex flex-col gap-3 mb-4">
           {/* Search */}
-          <div className="relative flex-1 min-w-48">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
@@ -144,25 +144,25 @@ export default function LaporanPage() {
           </div>
 
           {/* Date range */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Dari</label>
               <input
                 type="date"
                 value={dateFrom}
                 max={dateTo || undefined}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-transparent backdrop-blur-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-transparent backdrop-blur-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Sampai</label>
               <input
                 type="date"
                 value={dateTo}
                 min={dateFrom || undefined}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-transparent backdrop-blur-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-transparent backdrop-blur-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
             {(dateFrom || dateTo) && (
@@ -176,7 +176,7 @@ export default function LaporanPage() {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Data */}
         {loading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-red-700" />
@@ -187,7 +187,43 @@ export default function LaporanPage() {
           </div>
         ) : (
           <>
-            <div className="glass rounded-2xl overflow-hidden">
+            {/* Mobile & tablet: card list */}
+            <div className="lg:hidden space-y-3">
+              {records.map((r) => (
+                <div key={r.id} className="glass rounded-xl p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{r.nama_transaksi}</p>
+                      {r.deskripsi && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{r.deskripsi}</p>
+                      )}
+                    </div>
+                    {r.kategori && (
+                      <span className="shrink-0 px-2 py-0.5 text-xs rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 whitespace-nowrap">
+                        {r.kategori}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-white/20 dark:border-white/5">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Tanggal</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{formatTanggal(r.timestamp)}</p>
+                    </div>
+                    <div className="text-right">
+                      {r.kredit > 0 && (
+                        <p className="text-sm font-semibold text-green-600 dark:text-green-400">+ {formatRp(r.kredit)}</p>
+                      )}
+                      {r.debit > 0 && (
+                        <p className="text-sm font-semibold text-red-600 dark:text-red-400">− {formatRp(r.debit)}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden lg:block glass rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -240,7 +276,7 @@ export default function LaporanPage() {
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between mt-4 gap-3">
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {total === 0 ? "Tidak ada data" : `Menampilkan ${(page - 1) * limit + 1}–${Math.min(page * limit, total)} dari ${total} transaksi`}
               </p>
