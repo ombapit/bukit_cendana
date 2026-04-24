@@ -26,7 +26,22 @@ INSERT INTO permissions (id, name, code, module, description) VALUES
 ('e0000000-0000-0000-0000-000000000001', 'View Dashboard', 'dashboard.view', 'dashboard', 'Can view dashboard'),
 -- Report module
 ('f0000000-0000-0000-0000-000000000001', 'View Reports', 'report.view', 'report', 'Can view reports'),
-('f0000000-0000-0000-0000-000000000002', 'Export Reports', 'report.export', 'report', 'Can export reports')
+('f0000000-0000-0000-0000-000000000002', 'Export Reports', 'report.export', 'report', 'Can export reports'),
+-- Warga module
+('07000000-0000-0000-0000-000000000001', 'View Warga', 'warga.view', 'warga', 'Can view warga list and detail'),
+('07000000-0000-0000-0000-000000000002', 'Create Warga', 'warga.create', 'warga', 'Can create new warga'),
+('07000000-0000-0000-0000-000000000003', 'Update Warga', 'warga.update', 'warga', 'Can update existing warga'),
+('07000000-0000-0000-0000-000000000004', 'Delete Warga', 'warga.delete', 'warga', 'Can delete warga'),
+-- IPL module
+('08000000-0000-0000-0000-000000000001', 'View IPL', 'ipl.view', 'ipl', 'Can view IPL payment list'),
+('08000000-0000-0000-0000-000000000002', 'Create IPL', 'ipl.create', 'ipl', 'Can create new IPL payment'),
+('08000000-0000-0000-0000-000000000003', 'Update IPL', 'ipl.update', 'ipl', 'Can update IPL payment'),
+('08000000-0000-0000-0000-000000000004', 'Delete IPL', 'ipl.delete', 'ipl', 'Can delete IPL payment'),
+-- Finance module (pemasukan/pengeluaran)
+('09000000-0000-0000-0000-000000000001', 'View Finance', 'finance.view', 'finance', 'Can view income/expense records'),
+('09000000-0000-0000-0000-000000000002', 'Create Finance', 'finance.create', 'finance', 'Can create income/expense records'),
+('09000000-0000-0000-0000-000000000003', 'Update Finance', 'finance.update', 'finance', 'Can update income/expense records'),
+('09000000-0000-0000-0000-000000000004', 'Delete Finance', 'finance.delete', 'finance', 'Can delete income/expense records')
 ON CONFLICT (code) DO NOTHING;
 
 -- =============================================
@@ -55,19 +70,22 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
 ('10000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000001'), -- role.view
 ('10000000-0000-0000-0000-000000000003', 'e0000000-0000-0000-0000-000000000001'), -- dashboard.view
 ('10000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000001'), -- report.view
-('10000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000002')  -- report.export
+('10000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000002'), -- report.export
+('10000000-0000-0000-0000-000000000003', '07000000-0000-0000-0000-000000000001'), -- warga.view
+('10000000-0000-0000-0000-000000000003', '08000000-0000-0000-0000-000000000001'), -- ipl.view
+('10000000-0000-0000-0000-000000000003', '09000000-0000-0000-0000-000000000001')  -- finance.view
 ON CONFLICT DO NOTHING;
 
 -- Staff gets basic view
 INSERT INTO role_permissions (role_id, permission_id) VALUES
 ('10000000-0000-0000-0000-000000000004', 'e0000000-0000-0000-0000-000000000001'), -- dashboard.view
-('10000000-0000-0000-0000-000000000004', 'f0000000-0000-0000-0000-000000000001')  -- report.view
+('10000000-0000-0000-0000-000000000004', '07000000-0000-0000-0000-000000000001'), -- warga.view
+('10000000-0000-0000-0000-000000000004', '08000000-0000-0000-0000-000000000001'), -- ipl.view
+('10000000-0000-0000-0000-000000000004', '09000000-0000-0000-0000-000000000001')  -- finance.view
 ON CONFLICT DO NOTHING;
 
 -- =============================================
 -- SEED: Users (password: password123)
--- Salt: 6fb71394abaa225566ebebf7ee3d23f0
--- Hash dari: salt + "password123"
 -- =============================================
 INSERT INTO users (id, username, email, password, salt, full_name, is_active, role_id) VALUES
 ('20000000-0000-0000-0000-000000000001', 'superadmin', 'superadmin@example.com', '$2a$10$9OuU2sm/7ZM7L88dmxf54uNcAGHVAyvQrTsZHTELSWH14gSkBZ3sy', '6fb71394abaa225566ebebf7ee3d23f0', 'Super Administrator', true, '10000000-0000-0000-0000-000000000001'),
@@ -82,10 +100,23 @@ ON CONFLICT (username) DO NOTHING;
 -- Root menus
 INSERT INTO menus (id, name, path, icon, parent_id, sort_order, is_active, permission_id) VALUES
 ('30000000-0000-0000-0000-000000000001', 'Dashboard', '/dashboard', 'dashboard', NULL, 1, true, 'e0000000-0000-0000-0000-000000000001'),
-('30000000-0000-0000-0000-000000000002', 'User Management', '/users', 'people', NULL, 2, true, 'a0000000-0000-0000-0000-000000000001'),
-('30000000-0000-0000-0000-000000000003', 'Access Control', '/access', 'shield', NULL, 3, true, 'b0000000-0000-0000-0000-000000000001'),
-('30000000-0000-0000-0000-000000000004', 'Reports', '/reports', 'bar-chart', NULL, 4, true, 'f0000000-0000-0000-0000-000000000001'),
-('30000000-0000-0000-0000-000000000005', 'Settings', '/settings', 'settings', NULL, 5, true, 'd0000000-0000-0000-0000-000000000001')
+('35000000-0000-0000-0000-000000000001', 'Master Data', '/master-data', 'database', NULL, 2, true, '07000000-0000-0000-0000-000000000001'),
+('36000000-0000-0000-0000-000000000001', 'Transaksi', '/transactions', 'receipt', NULL, 3, true, '08000000-0000-0000-0000-000000000001'),
+('30000000-0000-0000-0000-000000000002', 'User Management', '/users', 'people', NULL, 4, true, 'a0000000-0000-0000-0000-000000000001'),
+('30000000-0000-0000-0000-000000000003', 'Access Control', '/access', 'shield', NULL, 5, true, 'b0000000-0000-0000-0000-000000000001'),
+('30000000-0000-0000-0000-000000000004', 'Reports', '/reports', 'bar-chart', NULL, 6, true, 'f0000000-0000-0000-0000-000000000001'),
+('30000000-0000-0000-0000-000000000005', 'Settings', '/settings', 'settings', NULL, 7, true, 'd0000000-0000-0000-0000-000000000001')
+ON CONFLICT DO NOTHING;
+
+-- Sub menus: Master Data
+INSERT INTO menus (id, name, path, icon, parent_id, sort_order, is_active, permission_id) VALUES
+('35100000-0000-0000-0000-000000000001', 'Data Warga', '/master-data/warga', 'users', '35000000-0000-0000-0000-000000000001', 1, true, '07000000-0000-0000-0000-000000000001')
+ON CONFLICT DO NOTHING;
+
+-- Sub menus: Transaksi
+INSERT INTO menus (id, name, path, icon, parent_id, sort_order, is_active, permission_id) VALUES
+('36100000-0000-0000-0000-000000000001', 'IPL', '/transactions/ipls/list', 'file-text', '36000000-0000-0000-0000-000000000001', 1, true, '08000000-0000-0000-0000-000000000001'),
+('36200000-0000-0000-0000-000000000001', 'Pemasukan/Pengeluaran', '/transactions/finance', 'trending-up', '36000000-0000-0000-0000-000000000001', 2, true, '09000000-0000-0000-0000-000000000001')
 ON CONFLICT DO NOTHING;
 
 -- Sub menus: User Management

@@ -1,58 +1,67 @@
 package repositories
 
 import (
+	"time"
+
 	"247-golang-api/models"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-type TransaksiRepository struct {
+type IPLRepository struct {
 	db *gorm.DB
 }
 
-func NewTransaksiRepository(db *gorm.DB) *TransaksiRepository {
-	return &TransaksiRepository{db: db}
+func NewIPLRepository(db *gorm.DB) *IPLRepository {
+	return &IPLRepository{db: db}
 }
 
-func (r *TransaksiRepository) Create(transaksi *models.Transaksi) error {
-	return r.db.Create(transaksi).Error
+func (r *IPLRepository) Create(ipl *models.IPL) error {
+	return r.db.Create(ipl).Error
 }
 
-func (r *TransaksiRepository) FindByID(id uuid.UUID) (*models.Transaksi, error) {
-	var transaksi models.Transaksi
-	err := r.db.Preload("Warga").First(&transaksi, "id = ?", id).Error
+func (r *IPLRepository) FindByID(id uuid.UUID) (*models.IPL, error) {
+	var ipl models.IPL
+	err := r.db.Preload("Warga").First(&ipl, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
-	return &transaksi, nil
+	return &ipl, nil
 }
 
-func (r *TransaksiRepository) FindAll(page, limit int) ([]models.TransaksiResponse, int64, error) {
-	var results []models.TransaksiResponse
+func (r *IPLRepository) FindAll(page, limit int, search string) ([]models.IPLResponse, int64, error) {
+	var results []models.IPLResponse
 	var total int64
 
-	r.db.Model(&models.Transaksi{}).Count(&total)
+	countQ := r.db.Table("ipls").Joins("LEFT JOIN warga ON warga.id = ipls.warga_id")
+	dataQ := r.db.Table("ipls").
+		Select(`ipls.id, ipls.warga_id, warga.nama as warga_nama, warga.blok as warga_blok, ipls.tanggal_ipl, ipls.gambar, ipls.created_at`).
+		Joins("LEFT JOIN warga ON warga.id = ipls.warga_id")
+
+	if search != "" {
+		like := "%" + search + "%"
+		countQ = countQ.Where("warga.nama ILIKE ? OR warga.blok ILIKE ? OR ipls.tanggal_ipl LIKE ?", like, like, like)
+		dataQ = dataQ.Where("warga.nama ILIKE ? OR warga.blok ILIKE ? OR ipls.tanggal_ipl LIKE ?", like, like, like)
+	}
+
+	countQ.Count(&total)
 
 	offset := (page - 1) * limit
-	err := r.db.Table("transaksi").
-		Select(`
-			transaksi.id,
-			transaksi.warga_id,
-			warga.nama as warga_nama,
-			warga.blok as warga_blok,
-			transaksi.tanggal_ipl,
-			transaksi.created_at
-		`).
-		Joins("LEFT JOIN warga ON warga.id = transaksi.warga_id").
-		Order("transaksi.created_at DESC").
-		Offset(offset).
-		Limit(limit).
-		Scan(&results).Error
+	err := dataQ.Order("ipls.created_at DESC").Offset(offset).Limit(limit).Scan(&results).Error
 
 	return results, total, err
 }
 
-func (r *TransaksiRepository) Delete(id uuid.UUID) error {
-	return r.db.Delete(&models.Transaksi{}, "id = ?", id).Error
+func (r *IPLRepository) Update(ipl *models.IPL) error {
+	return r.db.Model(ipl).Updates(map[string]interface{}{
+		"tanggal_ipl": ipl.TanggalIPL,
+		"gambar":      ipl.Gambar,
+		"created_at":  ipl.CreatedAt,
+		"updated_at":  time.Now(),
+	}).Error
+}
+
+func (r *IPLRepository) Delete(id uuid.UUID) error {
+	return r.db.Delete(&models.IPL{}, "id = ?", id).Error
 }

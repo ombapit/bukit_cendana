@@ -4,8 +4,10 @@ import { useEffect, useState, useCallback } from "react";
 import { wargaService } from "@/lib/services";
 import { Table } from "@/components/ui/table";
 import type { WargaWithLastPayment } from "@/types";
-import { Users, Search, Loader2 } from "lucide-react";
+import { Search, Loader2, ArrowLeft } from "lucide-react";
 import { useLocale } from "@/contexts/locale-context";
+import { PublicNavbar } from "@/components/public-navbar";
+import Link from "next/link";
 
 const bulanIndonesia: Record<string, string> = {
   "01": "Januari",
@@ -107,87 +109,68 @@ export default function WargaPage() {
 
   return (
     <div className="min-h-screen">
-      <nav className="glass-strong border-b border-white/20 dark:border-white/5 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-red-700 to-rose-600 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-white">Bukit Cendana</span>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <PublicNavbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-8">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-4">
+            <ArrowLeft className="w-4 h-4" />
+            Kembali
+          </Link>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t.landing.features.warga.title}</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            {t.landing.features.warga.desc}
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+            Daftar penghuni resmi Perumahan Bukit Cendana beserta status pembayaran IPL terakhir.
           </p>
         </div>
 
-        <div className="glass rounded-2xl p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Cari nama, blok, atau nomor telepon..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-white/30 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 bg-transparent backdrop-blur-sm dark:text-white dark:placeholder:text-gray-500"
-              />
-            </div>
-            <select
-              value={blokFilter}
-              onChange={(e) => setBlokFilter(e.target.value)}
-              className="px-4 py-2.5 border border-white/30 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 bg-transparent backdrop-blur-sm dark:text-white min-w-[150px]"
-            >
-              <option value="">Semua Blok</option>
-              {allBlocks.map((blok) => (
-                <option key={blok} value={blok}>
-                  {blok}
-                </option>
-              ))}
-            </select>
-            <select
-              value={tunggakanFilter}
-              onChange={(e) => setTunggakanFilter(e.target.value)}
-              className="px-4 py-2.5 border border-white/30 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 bg-transparent backdrop-blur-sm dark:text-white min-w-[180px]"
-            >
-              <option value="">Semua Pembayaran</option>
-              <option value="2">Tunggakan &gt; 2 Bulan</option>
-              <option value="3">Tunggakan &gt; 3 Bulan</option>
-              <option value="4">Tunggakan 4+ Bulan</option>
-            </select>
+        <div className="flex flex-wrap gap-3 mb-4">
+          <div className="relative flex-1 min-w-48">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <input
+              type="text"
+              placeholder="Cari nama, blok, atau nomor telepon..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-transparent backdrop-blur-sm text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            />
           </div>
+          <select
+            value={blokFilter}
+            onChange={(e) => setBlokFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white"
+          >
+            <option value="">Semua Blok</option>
+            {allBlocks.map((blok) => (
+              <option key={blok} value={blok}>{blok}</option>
+            ))}
+          </select>
+          <select
+            value={tunggakanFilter}
+            onChange={(e) => setTunggakanFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white"
+          >
+            <option value="">Semua Pembayaran</option>
+            <option value="2">Tunggakan &gt; 2 Bulan</option>
+            <option value="3">Tunggakan &gt; 3 Bulan</option>
+            <option value="4">Tunggakan 4+ Bulan</option>
+          </select>
         </div>
 
-        <div className="glass rounded-2xl overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-red-700" />
-            </div>
-          ) : (
-            <>
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-red-700" />
+          </div>
+        ) : (
+          <>
+            <div className="glass rounded-2xl overflow-hidden">
               <Table columns={columns} data={filteredWarga} />
-              <div className="px-6 py-4 border-t border-white/20 dark:border-white/10">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Menampilkan {filteredWarga.length} dari {warga.length} warga
-                </p>
-              </div>
-            </>
-          )}
-        </div>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+              Menampilkan {filteredWarga.length} dari {warga.length} warga
+            </p>
+          </>
+        )}
       </div>
-
-      <footer className="border-t border-white/20 dark:border-white/5 py-6 mt-8">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500 dark:text-gray-400">
-          {t.landing.footer}
-        </div>
-      </footer>
     </div>
   );
 }

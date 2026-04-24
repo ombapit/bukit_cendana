@@ -176,6 +176,34 @@ func (h *UserHandler) Delete(c *gin.Context) {
 	utils.SuccessResponse(c, "User deleted successfully", nil)
 }
 
+// ResetPassword godoc
+// @Summary     Reset password user (admin)
+// @Tags        Users
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id      path     string                          true "User ID"
+// @Param       request body     models.AdminResetPasswordRequest true "Password baru"
+// @Success     200     {object} utils.APIResponse
+// @Router      /users/{id}/password [put]
+func (h *UserHandler) ResetPassword(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+	var req models.AdminResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ValidationErrorDetailResponse(c, err)
+		return
+	}
+	if err := h.userService.ResetPassword(id, req.NewPassword); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	utils.SuccessResponse(c, "Password reset successfully", nil)
+}
+
 // ChangePassword godoc
 // @Summary     Ganti password
 // @Description Mengganti password user yang sedang login

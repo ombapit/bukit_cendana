@@ -111,6 +111,24 @@ func (s *UserService) Delete(id uuid.UUID) error {
 	return s.userRepo.Delete(id)
 }
 
+func (s *UserService) ResetPassword(id uuid.UUID, newPassword string) error {
+	user, err := s.userRepo.FindByID(id)
+	if err != nil {
+		return errors.New("user not found")
+	}
+	salt, err := utils.GenerateSalt()
+	if err != nil {
+		return errors.New("failed to generate salt")
+	}
+	hashedPassword, err := utils.HashPassword(newPassword, salt)
+	if err != nil {
+		return errors.New("failed to hash password")
+	}
+	user.Password = hashedPassword
+	user.Salt = salt
+	return s.userRepo.Update(user)
+}
+
 func (s *UserService) ChangePassword(id uuid.UUID, req models.ChangePasswordRequest) error {
 	user, err := s.userRepo.FindByID(id)
 	if err != nil {

@@ -11,13 +11,15 @@ import type { Menu } from "@/types";
 import {
   LayoutDashboard, Users, Shield, Lock, Menu as MenuIcon, BarChart3,
   Settings, ChevronDown, Eye, UserPlus, Key, Download, Zap, LogOut, User,
-  ChevronsLeft, ChevronsRight, X,
+  ChevronsLeft, ChevronsRight, X, Database, Receipt, FileText, TrendingUp,
 } from "lucide-react";
 
 const iconMap: Record<string, React.ElementType> = {
   dashboard: LayoutDashboard, people: Users, shield: Shield, lock: Lock,
   "bar-chart": BarChart3, settings: Settings, list: MenuIcon, "user-plus": UserPlus,
   key: Key, eye: Eye, download: Download, menu: MenuIcon,
+  database: Database, users: Users, receipt: Receipt,
+  "file-text": FileText, "trending-up": TrendingUp,
 };
 
 function getIcon(name: string) {

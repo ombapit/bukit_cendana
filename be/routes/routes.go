@@ -20,11 +20,15 @@ func Setup(
 	permHandler *handlers.PermissionHandler,
 	menuHandler *handlers.MenuHandler,
 	wargaHandler *handlers.WargaHandler,
-	transaksiHandler *handlers.TransaksiHandler,
+	iplHandler *handlers.IPLHandler,
+	financeHandler *handlers.FinanceHandler,
 	authService *services.AuthService,
 ) {
 	// Swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Serve uploaded files
+	r.Static("/uploads", "./uploads")
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -45,6 +49,13 @@ func Setup(
 	{
 		warga.GET("", wargaHandler.FindAll)
 		warga.GET("/:id", wargaHandler.FindByID)
+	}
+
+	// === Public: Finance summary & list (read-only, no auth) ===
+	publicFinance := api.Group("/finance")
+	{
+		publicFinance.GET("", financeHandler.FindAll)
+		publicFinance.GET("/summary", financeHandler.GetSummary)
 	}
 
 	// === Protected: Warga CRUD ===
@@ -70,10 +81,17 @@ func Setup(
 		// My menus (dynamic RBAC filtered)
 		protected.GET("/menus/my", menuHandler.GetMyMenus)
 
-		// === Transaksi ===
-		protected.GET("/transaksi", middleware.RBACMiddleware(authService, "transaksi.view"), transaksiHandler.FindAll)
-		protected.POST("/transaksi", middleware.RBACMiddleware(authService, "transaksi.create"), transaksiHandler.Create)
-		protected.DELETE("/transaksi/:id", middleware.RBACMiddleware(authService, "transaksi.delete"), transaksiHandler.Delete)
+		// === IPL ===
+		protected.GET("/ipls", middleware.RBACMiddleware(authService, "ipl.view"), iplHandler.FindAll)
+		protected.POST("/ipls", middleware.RBACMiddleware(authService, "ipl.create"), iplHandler.Create)
+		protected.PUT("/ipls/:id", middleware.RBACMiddleware(authService, "ipl.update"), iplHandler.Update)
+		protected.DELETE("/ipls/:id", middleware.RBACMiddleware(authService, "ipl.delete"), iplHandler.Delete)
+
+		// === Finance (write operations; reads are public above) ===
+		protected.GET("/finance/:id", middleware.RBACMiddleware(authService, "finance.view"), financeHandler.FindByID)
+		protected.POST("/finance", middleware.RBACMiddleware(authService, "finance.create"), financeHandler.Create)
+		protected.PUT("/finance/:id", middleware.RBACMiddleware(authService, "finance.update"), financeHandler.Update)
+		protected.DELETE("/finance/:id", middleware.RBACMiddleware(authService, "finance.delete"), financeHandler.Delete)
 
 		// === Users (requires user permissions) ===
 		users := protected.Group("/users")
@@ -82,6 +100,7 @@ func Setup(
 			users.GET("/:id", middleware.RBACMiddleware(authService, "user.view"), userHandler.FindByID)
 			users.POST("", middleware.RBACMiddleware(authService, "user.create"), userHandler.Create)
 			users.PUT("/:id", middleware.RBACMiddleware(authService, "user.update"), userHandler.Update)
+			users.PUT("/:id/password", middleware.RBACMiddleware(authService, "user.update"), userHandler.ResetPassword)
 			users.DELETE("/:id", middleware.RBACMiddleware(authService, "user.delete"), userHandler.Delete)
 		}
 

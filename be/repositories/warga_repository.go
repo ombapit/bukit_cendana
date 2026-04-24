@@ -59,7 +59,7 @@ func (r *WargaRepository) FindAllWithLastPayment(page, limit int) ([]models.Warg
 			w.iuran,
 			COALESCE((
 				SELECT MAX(t.tanggal_ipl) 
-				FROM transaksi t 
+				FROM ipls t
 				WHERE t.warga_id = w.id
 			), '') as last_payment
 		FROM warga w
@@ -90,7 +90,7 @@ func (r *WargaRepository) FindByTunggakan(page, limit, bulan int) ([]models.Warg
 				w.iuran,
 				COALESCE((
 					SELECT MAX(t.tanggal_ipl) 
-					FROM transaksi t 
+					FROM ipls t
 					WHERE t.warga_id = w.id
 				), '') as last_payment
 			FROM warga w
@@ -111,7 +111,7 @@ func (r *WargaRepository) FindByTunggakan(page, limit, bulan int) ([]models.Warg
 				w.id,
 				COALESCE((
 					SELECT MAX(t.tanggal_ipl) 
-					FROM transaksi t 
+					FROM ipls t
 					WHERE t.warga_id = w.id
 				), '') as last_payment
 			FROM warga w

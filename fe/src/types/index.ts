@@ -193,11 +193,50 @@ export interface WargaWithLastPayment {
   last_payment: string;
 }
 
-export interface Transaksi {
+export interface Finance {
+  id: string;
+  nama_transaksi: string;
+  deskripsi: string;
+  kategori: string;
+  debit: number;
+  kredit: number;
+  referensi_id?: string;
+  referensi_tipe: string;
+  timestamp: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FinanceSummary {
+  total_kredit: number;
+  total_debit: number;
+  saldo: number;
+}
+
+export interface CreateFinanceRequest {
+  nama_transaksi: string;
+  deskripsi?: string;
+  kategori?: string;
+  debit: number;
+  kredit: number;
+  timestamp: string;
+}
+
+export interface UpdateFinanceRequest {
+  nama_transaksi?: string;
+  deskripsi?: string;
+  kategori?: string;
+  debit?: number;
+  kredit?: number;
+  timestamp?: string;
+}
+
+export interface IPL {
   id: string;
   warga_id: string;
   warga_nama: string;
   warga_blok: string;
   tanggal_ipl: string;
+  gambar: string;
   created_at: string;
 }

@@ -9,7 +9,7 @@ import { Modal } from "@/components/ui/modal";
 import { Badge } from "@/components/ui/badge";
 import { Table } from "@/components/ui/table";
 import type { UserResponse, Role } from "@/types";
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, Search, ToggleLeft, ToggleRight, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, Search, ToggleLeft, ToggleRight, EyeOff, KeyRound } from "lucide-react";
 import { useLocale } from "@/contexts/locale-context";
 import { parseAPIError } from "@/lib/validation";
 
@@ -36,6 +36,14 @@ export default function UsersPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<UserResponse | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // Reset password
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwUser, setPwUser] = useState<UserResponse | null>(null);
+  const [pwForm, setPwForm] = useState({ new_password: "", confirm: "" });
+  const [pwError, setPwError] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   // Delete confirm
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -152,6 +160,28 @@ export default function UsersPage() {
     } catch { /* ignore */ }
   };
 
+  // ========== Reset Password ==========
+  const openResetPw = (u: UserResponse) => {
+    setPwUser(u);
+    setPwForm({ new_password: "", confirm: "" });
+    setPwError("");
+    setShowPw(false);
+    setPwOpen(true);
+  };
+
+  const handleResetPw = async () => {
+    if (!pwUser) return;
+    if (pwForm.new_password.length < 6) { setPwError("Password minimal 6 karakter"); return; }
+    if (pwForm.new_password !== pwForm.confirm) { setPwError("Konfirmasi password tidak cocok"); return; }
+    setPwLoading(true);
+    setPwError("");
+    try {
+      await userService.resetPassword(pwUser.id, pwForm.new_password);
+      setPwOpen(false);
+    } catch { setPwError("Gagal mereset password"); }
+    setPwLoading(false);
+  };
+
   // ========== Delete ==========
   const openDelete = (u: UserResponse) => {
     setDeletingUser(u);
@@ -226,6 +256,13 @@ export default function UsersPage() {
             title={t.users.editUserBtn}
           >
             <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          </button>
+          <button
+            onClick={() => openResetPw(u)}
+            className="p-1.5 rounded-lg hover:bg-amber-500/10 transition-colors"
+            title="Ganti Password"
+          >
+            <KeyRound className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           </button>
           <button
             onClick={() => openDelete(u)}
@@ -473,6 +510,47 @@ export default function UsersPage() {
             </div>
           </div>
         ) : null}
+      </Modal>
+
+      {/* ========== Modal: Reset Password ========== */}
+      <Modal open={pwOpen} onClose={() => setPwOpen(false)} title="Ganti Password" size="sm">
+        <div className="space-y-4">
+          {pwError && (
+            <div className="bg-rose-500/10 text-rose-700 dark:text-rose-400 text-sm p-3 rounded-xl border border-rose-500/20">{pwError}</div>
+          )}
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Reset password untuk <span className="font-medium text-gray-900 dark:text-white">{pwUser?.full_name}</span> (@{pwUser?.username}).
+          </p>
+          <div className="relative">
+            <Input
+              label="Password Baru"
+              required
+              type={showPw ? "text" : "password"}
+              value={pwForm.new_password}
+              onChange={(e) => setPwForm({ ...pwForm, new_password: e.target.value })}
+              placeholder="Minimal 6 karakter"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw(!showPw)}
+              className="absolute right-3 top-[34px] text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+            >
+              {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          <Input
+            label="Konfirmasi Password Baru"
+            required
+            type={showPw ? "text" : "password"}
+            value={pwForm.confirm}
+            onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
+            placeholder="Ulangi password baru"
+          />
+          <div className="flex justify-end gap-2 pt-4 border-t border-white/20 dark:border-white/10">
+            <Button variant="outline" onClick={() => setPwOpen(false)}>{t.common.cancel}</Button>
+            <Button onClick={handleResetPw} loading={pwLoading}>Simpan Password</Button>
+          </div>
+        </div>
       </Modal>
 
       {/* ========== Modal: Delete Confirmation ========== */}

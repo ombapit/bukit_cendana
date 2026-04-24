@@ -30,11 +30,11 @@ func main() {
 	db.Raw(`SELECT version FROM schema_migrations WHERE version LIKE '%transaksi%' OR version LIKE '%007%' OR version LIKE '%009%' OR version LIKE '%011%' ORDER BY version`).Scan(&rows)
 	log.Printf("schema_migrations saat ini: %v", rows)
 
-	log.Println("Dropping tabel transaksi...")
-	if err := db.Exec("DROP TABLE IF EXISTS transaksi CASCADE").Error; err != nil {
-		log.Fatalf("Gagal drop transaksi: %v", err)
+	log.Println("Dropping tabel ipls dan transaksi...")
+	if err := db.Exec("DROP TABLE IF EXISTS ipls CASCADE; DROP TABLE IF EXISTS transaksi CASCADE").Error; err != nil {
+		log.Fatalf("Gagal drop tabel: %v", err)
 	}
-	log.Println("Tabel transaksi berhasil di-drop.")
+	log.Println("Tabel ipls/transaksi berhasil di-drop.")
 
 	log.Println("Menghapus semua entry transaksi dari schema_migrations...")
 	result := db.Exec(`DELETE FROM schema_migrations WHERE version LIKE '%transaksi%'`)

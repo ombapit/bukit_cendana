@@ -78,7 +78,7 @@ const id = {
 
   // Sidebar
   sidebar: {
-    admin: "247 Admin",
+    admin: "Cendana Admin",
   },
 
   // Dashboard

@@ -43,7 +43,8 @@ func main() {
 		&models.Permission{},
 		&models.Menu{},
 		&models.Warga{},
-		&models.Transaksi{},
+		&models.IPL{},
+		&models.Finance{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -60,7 +61,8 @@ func main() {
 	permRepo := repositories.NewPermissionRepository(db)
 	menuRepo := repositories.NewMenuRepository(db)
 	wargaRepo := repositories.NewWargaRepository(db)
-	transaksiRepo := repositories.NewTransaksiRepository(db)
+	iplRepo := repositories.NewIPLRepository(db)
+	financeRepo := repositories.NewFinanceRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, rdb, cfg)
@@ -69,7 +71,8 @@ func main() {
 	permService := services.NewPermissionService(permRepo)
 	menuService := services.NewMenuService(menuRepo)
 	wargaService := services.NewWargaService(wargaRepo)
-	transaksiService := services.NewTransaksiService(transaksiRepo)
+	financeService := services.NewFinanceService(financeRepo)
+	iplService := services.NewIPLService(iplRepo, financeService)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -78,7 +81,8 @@ func main() {
 	permHandler := handlers.NewPermissionHandler(permService)
 	menuHandler := handlers.NewMenuHandler(menuService, authService)
 	wargaHandler := handlers.NewWargaHandler(wargaService)
-	transaksiHandler := handlers.NewTransaksiHandler(transaksiService)
+	iplHandler := handlers.NewIPLHandler(iplService)
+	financeHandler := handlers.NewFinanceHandler(financeService)
 
 	// Setup Gin
 	if cfg.AppEnv == "production" {
@@ -100,7 +104,7 @@ func main() {
 	})
 
 	// Setup routes
-	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, transaksiHandler, authService)
+	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, iplHandler, financeHandler, authService)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.AppPort)

@@ -1,6 +1,10 @@
 import api from "./api";
 import type {
   APIResponse,
+  Finance,
+  FinanceSummary,
+  CreateFinanceRequest,
+  UpdateFinanceRequest,
   LoginRequest,
   LoginResponse,
   CreateUserRequest,
@@ -20,7 +24,7 @@ import type {
   WargaResponse,
   CreateWargaRequest,
   UpdateWargaRequest,
-  Transaksi,
+  IPL,
 } from "@/types";
 
 // ============ Auth ============
@@ -55,6 +59,9 @@ export const userService = {
 
   delete: (id: string) =>
     api.delete<APIResponse>(`/users/${id}`),
+
+  resetPassword: (id: string, newPassword: string) =>
+    api.put<APIResponse>(`/users/${id}/password`, { new_password: newPassword }),
 };
 
 // ============ Roles ============
@@ -122,7 +129,7 @@ export const wargaService = {
   getAll: (page = 1, limit = 1000, tunggakan?: number) => {
     let url = `/warga?page=${page}&limit=${limit}`;
     if (tunggakan) url += `&tunggakan=${tunggakan}`;
-    return api.get<APIResponse<{ data: WargaWithLastPayment[]; meta: { page: number; limit: number; total: number; total_pages: number } }>>(url);
+    return api.get<APIResponse<WargaWithLastPayment[]>>(url);
   },
 
   getById: (id: string) =>
@@ -138,8 +145,55 @@ export const wargaService = {
     api.delete<APIResponse>(`/warga/${id}`),
 };
 
-// ============ Transaksi ============
-export const transaksiService = {
-  getAll: (page = 1, limit = 100) =>
-    api.get<APIResponse<{ data: Transaksi[]; meta: { page: number; limit: number; total: number; total_pages: number } }>>(`/transaksi?page=${page}&limit=${limit}`),
+// ============ Finance ============
+export const financeService = {
+  getAll: (page = 1, limit = 20, search = "", dateFrom = "", dateTo = "") => {
+    let url = `/finance?page=${page}&limit=${limit}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (dateFrom) url += `&date_from=${dateFrom}`;
+    if (dateTo) url += `&date_to=${dateTo}`;
+    return api.get<APIResponse<Finance[]>>(url);
+  },
+
+  getSummary: (dateFrom = "", dateTo = "") => {
+    let url = "/finance/summary";
+    if (dateFrom || dateTo) {
+      const params = new URLSearchParams();
+      if (dateFrom) params.set("date_from", dateFrom);
+      if (dateTo) params.set("date_to", dateTo);
+      url += `?${params.toString()}`;
+    }
+    return api.get<APIResponse<FinanceSummary>>(url);
+  },
+
+  create: (data: CreateFinanceRequest) =>
+    api.post<APIResponse<Finance>>("/finance", data),
+
+  update: (id: string, data: UpdateFinanceRequest) =>
+    api.put<APIResponse<Finance>>(`/finance/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<APIResponse>(`/finance/${id}`),
+};
+
+// ============ IPL ============
+export const iplService = {
+  getAll: (page = 1, limit = 20, search = "") => {
+    let url = `/ipls?page=${page}&limit=${limit}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return api.get<APIResponse<IPL[]>>(url);
+  },
+
+  create: (data: FormData) =>
+    api.post<APIResponse<IPL>>("/ipls", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+
+  update: (id: string, data: FormData) =>
+    api.put<APIResponse<IPL>>(`/ipls/${id}`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+
+  delete: (id: string) =>
+    api.delete<APIResponse>(`/ipls/${id}`),
 };

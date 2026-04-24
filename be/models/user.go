@@ -67,6 +67,10 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password" binding:"required,min=6" example:"newpassword456"`
 }
 
+type AdminResetPasswordRequest struct {
+	NewPassword string `json:"new_password" binding:"required,min=6"`
+}
+
 func (u *User) ToResponse() UserResponse {
 	return UserResponse{
 		ID:       u.ID,
