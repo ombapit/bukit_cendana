@@ -163,6 +163,20 @@ export default function WargaPage() {
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
             Daftar penghuni resmi Perumahan Bukit Cendana beserta status pembayaran IPL terakhir.
           </p>
+          <div className="flex flex-wrap items-center gap-3 mt-3">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-red-400 dark:bg-red-500 shrink-0" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">Tunggakan &gt; 3 bulan</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-amber-400 dark:bg-amber-500 shrink-0" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">Tunggakan &gt; 2 bulan</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-white border border-gray-200 dark:border-gray-600 shrink-0" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">Pembayaran lancar</span>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 lg:flex gap-3 mb-4">
