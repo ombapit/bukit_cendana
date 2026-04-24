@@ -42,6 +42,8 @@ func main() {
 		&models.Role{},
 		&models.Permission{},
 		&models.Menu{},
+		&models.Warga{},
+		&models.Transaksi{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -57,6 +59,8 @@ func main() {
 	roleRepo := repositories.NewRoleRepository(db)
 	permRepo := repositories.NewPermissionRepository(db)
 	menuRepo := repositories.NewMenuRepository(db)
+	wargaRepo := repositories.NewWargaRepository(db)
+	transaksiRepo := repositories.NewTransaksiRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, rdb, cfg)
@@ -64,6 +68,8 @@ func main() {
 	roleService := services.NewRoleService(roleRepo)
 	permService := services.NewPermissionService(permRepo)
 	menuService := services.NewMenuService(menuRepo)
+	wargaService := services.NewWargaService(wargaRepo)
+	transaksiService := services.NewTransaksiService(transaksiRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -71,6 +77,8 @@ func main() {
 	roleHandler := handlers.NewRoleHandler(roleService)
 	permHandler := handlers.NewPermissionHandler(permService)
 	menuHandler := handlers.NewMenuHandler(menuService, authService)
+	wargaHandler := handlers.NewWargaHandler(wargaService)
+	transaksiHandler := handlers.NewTransaksiHandler(transaksiService)
 
 	// Setup Gin
 	if cfg.AppEnv == "production" {
@@ -92,7 +100,7 @@ func main() {
 	})
 
 	// Setup routes
-	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, authService)
+	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, transaksiHandler, authService)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.AppPort)

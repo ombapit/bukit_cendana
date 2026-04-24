@@ -16,6 +16,11 @@ import type {
   Menu,
   CreateMenuRequest,
   UpdateMenuRequest,
+  WargaWithLastPayment,
+  WargaResponse,
+  CreateWargaRequest,
+  UpdateWargaRequest,
+  Transaksi,
 } from "@/types";
 
 // ============ Auth ============
@@ -110,4 +115,31 @@ export const menuService = {
 
   delete: (id: string) =>
     api.delete<APIResponse>(`/menus/${id}`),
+};
+
+// ============ Warga ============
+export const wargaService = {
+  getAll: (page = 1, limit = 1000, tunggakan?: number) => {
+    let url = `/warga?page=${page}&limit=${limit}`;
+    if (tunggakan) url += `&tunggakan=${tunggakan}`;
+    return api.get<APIResponse<{ data: WargaWithLastPayment[]; meta: { page: number; limit: number; total: number; total_pages: number } }>>(url);
+  },
+
+  getById: (id: string) =>
+    api.get<APIResponse<WargaResponse>>(`/warga/${id}`),
+
+  create: (data: CreateWargaRequest) =>
+    api.post<APIResponse<WargaResponse>>("/warga", data),
+
+  update: (id: string, data: UpdateWargaRequest) =>
+    api.put<APIResponse<WargaResponse>>(`/warga/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<APIResponse>(`/warga/${id}`),
+};
+
+// ============ Transaksi ============
+export const transaksiService = {
+  getAll: (page = 1, limit = 100) =>
+    api.get<APIResponse<{ data: Transaksi[]; meta: { page: number; limit: number; total: number; total_pages: number } }>>(`/transaksi?page=${page}&limit=${limit}`),
 };

@@ -19,6 +19,8 @@ func Setup(
 	roleHandler *handlers.RoleHandler,
 	permHandler *handlers.PermissionHandler,
 	menuHandler *handlers.MenuHandler,
+	wargaHandler *handlers.WargaHandler,
+	transaksiHandler *handlers.TransaksiHandler,
 	authService *services.AuthService,
 ) {
 	// Swagger
@@ -38,6 +40,22 @@ func Setup(
 		auth.POST("/refresh", authHandler.RefreshToken)
 	}
 
+	// === Public: Warga (no auth required) ===
+	warga := api.Group("/warga")
+	{
+		warga.GET("", wargaHandler.FindAll)
+		warga.GET("/:id", wargaHandler.FindByID)
+	}
+
+	// === Protected: Warga CRUD ===
+	protectedWarga := api.Group("/warga")
+	protectedWarga.Use(middleware.AuthMiddleware(cfg))
+	{
+		protectedWarga.POST("", middleware.RBACMiddleware(authService, "warga.create"), wargaHandler.Create)
+		protectedWarga.PUT("/:id", middleware.RBACMiddleware(authService, "warga.update"), wargaHandler.Update)
+		protectedWarga.DELETE("/:id", middleware.RBACMiddleware(authService, "warga.delete"), wargaHandler.Delete)
+	}
+
 	// === Protected routes ===
 	protected := api.Group("")
 	protected.Use(middleware.AuthMiddleware(cfg))
@@ -51,6 +69,11 @@ func Setup(
 
 		// My menus (dynamic RBAC filtered)
 		protected.GET("/menus/my", menuHandler.GetMyMenus)
+
+		// === Transaksi ===
+		protected.GET("/transaksi", middleware.RBACMiddleware(authService, "transaksi.view"), transaksiHandler.FindAll)
+		protected.POST("/transaksi", middleware.RBACMiddleware(authService, "transaksi.create"), transaksiHandler.Create)
+		protected.DELETE("/transaksi/:id", middleware.RBACMiddleware(authService, "transaksi.delete"), transaksiHandler.Delete)
 
 		// === Users (requires user permissions) ===
 		users := protected.Group("/users")

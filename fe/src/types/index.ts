@@ -151,3 +151,53 @@ export interface UpdateMenuRequest {
   is_active?: boolean;
   permission_id?: string;
 }
+
+export interface Warga {
+  id: string;
+  nama: string;
+  blok: string;
+  no_telp?: string;
+  iuran: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WargaResponse {
+  id: string;
+  nama: string;
+  blok: string;
+  no_telp?: string;
+  iuran: number;
+}
+
+export interface CreateWargaRequest {
+  nama: string;
+  blok: string;
+  no_telp?: string;
+  iuran: number;
+}
+
+export interface UpdateWargaRequest {
+  nama?: string;
+  blok?: string;
+  no_telp?: string;
+  iuran?: number;
+}
+
+export interface WargaWithLastPayment {
+  id: string;
+  nama: string;
+  blok: string;
+  no_telp?: string;
+  iuran: number;
+  last_payment: string;
+}
+
+export interface Transaksi {
+  id: string;
+  warga_id: string;
+  warga_nama: string;
+  warga_blok: string;
+  tanggal_ipl: string;
+  created_at: string;
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, Users, LayoutDashboard, Menu, ArrowRight, Zap, Lock, Server } from "lucide-react";
+import { Shield, Users, LayoutDashboard, Menu, ArrowRight, Zap, Bell, CreditCard, FileText } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useLocale } from "@/contexts/locale-context";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
@@ -10,12 +10,9 @@ export default function LandingPage() {
   const { t } = useLocale();
 
   const features = [
-    { icon: Lock, ...t.landing.features.auth },
-    { icon: Shield, ...t.landing.features.rbac },
-    { icon: Menu, ...t.landing.features.menu },
-    { icon: Users, ...t.landing.features.user },
-    { icon: LayoutDashboard, ...t.landing.features.dashboard },
-    { icon: Server, ...t.landing.features.api },
+    { icon: Users, title: t.landing.features.warga.title, desc: t.landing.features.warga.desc, href: "/warga" },
+    { icon: Bell, title: t.landing.features.pengumuman.title, desc: t.landing.features.pengumuman.desc, href: "#" },
+    { icon: FileText, title: t.landing.features.laporan.title, desc: t.landing.features.laporan.desc, href: "#" },
   ];
 
   return (
@@ -69,11 +66,13 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature) => (
               <div key={feature.title} className="glass p-6 rounded-xl hover:shadow-lg hover:shadow-red-700/10 hover:-translate-y-1 transition-all duration-300">
-                <div className="w-12 h-12 bg-gradient-to-br from-red-700/20 to-rose-600/20 dark:from-red-700/30 dark:to-rose-600/30 rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-red-700 dark:text-red-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">{feature.desc}</p>
+                <Link href={feature.href || "#"} className="block">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-700/20 to-rose-600/20 dark:from-red-700/30 dark:to-rose-600/30 rounded-lg flex items-center justify-center mb-4">
+                    <feature.icon className="w-6 h-6 text-red-700 dark:text-red-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{feature.desc}</p>
+                </Link>
               </div>
             ))}
           </div>
