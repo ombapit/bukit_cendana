@@ -1,0 +1,1 @@
+ALTER TABLE pengumuman ADD COLUMN IF NOT EXISTS created_by_name VARCHAR(255) DEFAULT '';

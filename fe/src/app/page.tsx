@@ -1,16 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { Users, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Users, FileText, Bell } from "lucide-react";
 import { PublicNavbar } from "@/components/public-navbar";
+import { PublicFooter } from "@/components/public-footer";
 import { useLocale } from "@/contexts/locale-context";
+import { pengumumanService } from "@/lib/services";
+import type { Pengumuman } from "@/types";
+
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace("/api/v1", "");
+
+function getImageURL(gambar: string) {
+  return gambar ? `${API_BASE}${gambar}` : "";
+}
+
+function formatTanggal(iso: string) {
+  try { return new Date(iso).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }); }
+  catch { return "-"; }
+}
 
 export default function LandingPage() {
   const { t } = useLocale();
+  const [latestPengumuman, setLatestPengumuman] = useState<Pengumuman[]>([]);
+
+  useEffect(() => {
+    pengumumanService.getAll(1, 3, "", "", true)
+      .then((res) => setLatestPengumuman(res.data?.data || []))
+      .catch(() => {});
+  }, []);
 
   const features = [
     { icon: Users, title: t.landing.features.warga.title, desc: t.landing.features.warga.desc, href: "/warga" },
-    // { icon: Bell, title: t.landing.features.pengumuman.title, desc: t.landing.features.pengumuman.desc, href: "#" },
+    { icon: Bell, title: t.landing.features.pengumuman.title, desc: t.landing.features.pengumuman.desc, href: "/pengumuman" },
     { icon: FileText, title: t.landing.features.laporan.title, desc: t.landing.features.laporan.desc, href: "/laporan" },
   ];
 
@@ -63,12 +85,45 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-white/20 dark:border-white/5 py-8">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>{t.landing.footer}</p>
-        </div>
-      </footer>
+      {/* Pengumuman Terbaru */}
+      {latestPengumuman.length > 0 && (
+        <section className="py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Pengumuman Terbaru</h2>
+              <Link href="/pengumuman" className="text-sm text-red-700 dark:text-red-400 hover:underline">Lihat semua →</Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {latestPengumuman.map((p) => (
+                <Link key={p.id} href={`/pengumuman?id=${p.id}&from=home`} className="glass rounded-2xl overflow-hidden hover:shadow-lg hover:shadow-red-700/10 hover:-translate-y-0.5 transition-all duration-200">
+                  {p.gambar ? (
+                    <img src={getImageURL(p.gambar)} alt={p.judul} className="w-full h-36 object-cover" />
+                  ) : (
+                    <div className="w-full h-36 bg-gradient-to-br from-red-700/10 to-rose-600/10 dark:from-red-700/20 dark:to-rose-600/20 flex items-center justify-center">
+                      <span className="text-3xl">📢</span>
+                    </div>
+                  )}
+                  <div className="p-4">
+                    {p.kategori && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-red-700/10 text-red-700 dark:bg-red-700/20 dark:text-red-400 mb-2 inline-block">{p.kategori}</span>
+                    )}
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-snug mb-1">{p.judul}</h3>
+                    {p.konten && <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{p.konten.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim()}</p>}
+                    <div className="flex items-center justify-between mt-2 gap-2">
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500">{formatTanggal(p.created_at)}</p>
+                      {p.created_by_name && (
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 shrink-0">{p.created_by_name}</p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <PublicFooter />
     </div>
   );
 }

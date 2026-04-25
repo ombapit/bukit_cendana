@@ -232,6 +232,19 @@ export interface UpdateFinanceRequest {
   timestamp?: string;
 }
 
+export interface Pengumuman {
+  id: string;
+  judul: string;
+  konten: string;
+  gambar: string;
+  kategori: string;
+  tags: string;
+  is_published: boolean;
+  created_by_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface IPL {
   id: string;
   warga_id: string;

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { financeService } from "@/lib/services";
 import { PublicNavbar } from "@/components/public-navbar";
+import { PublicFooter } from "@/components/public-footer";
 import type { Finance, FinanceSummary } from "@/types";
 import {
   TrendingUp, TrendingDown, Wallet, ChevronLeft, ChevronRight,
@@ -78,10 +79,10 @@ export default function LaporanPage() {
   }, [page, totalPages]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <PublicNavbar />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Back + Header */}
         <div className="mb-8">
           <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-4">
@@ -319,6 +320,7 @@ export default function LaporanPage() {
           </>
         )}
       </div>
+      <PublicFooter />
     </div>
   );
 }

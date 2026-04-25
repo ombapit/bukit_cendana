@@ -22,6 +22,7 @@ func Setup(
 	wargaHandler *handlers.WargaHandler,
 	iplHandler *handlers.IPLHandler,
 	financeHandler *handlers.FinanceHandler,
+	pengumumanHandler *handlers.PengumumanHandler,
 	authService *services.AuthService,
 ) {
 	// Swagger
@@ -58,6 +59,13 @@ func Setup(
 		publicFinance.GET("/summary", financeHandler.GetSummary)
 	}
 
+	// === Public: Pengumuman (read-only, no auth) ===
+	publicPengumuman := api.Group("/pengumuman")
+	{
+		publicPengumuman.GET("", pengumumanHandler.FindAll)
+		publicPengumuman.GET("/:id", pengumumanHandler.FindByID)
+	}
+
 	// === Protected: Warga CRUD ===
 	protectedWarga := api.Group("/warga")
 	protectedWarga.Use(middleware.AuthMiddleware(cfg))
@@ -92,6 +100,11 @@ func Setup(
 		protected.POST("/finance", middleware.RBACMiddleware(authService, "finance.create"), financeHandler.Create)
 		protected.PUT("/finance/:id", middleware.RBACMiddleware(authService, "finance.update"), financeHandler.Update)
 		protected.DELETE("/finance/:id", middleware.RBACMiddleware(authService, "finance.delete"), financeHandler.Delete)
+
+		// === Pengumuman (write operations; reads are public above) ===
+		protected.POST("/pengumuman", middleware.RBACMiddleware(authService, "pengumuman.create"), pengumumanHandler.Create)
+		protected.PUT("/pengumuman/:id", middleware.RBACMiddleware(authService, "pengumuman.update"), pengumumanHandler.Update)
+		protected.DELETE("/pengumuman/:id", middleware.RBACMiddleware(authService, "pengumuman.delete"), pengumumanHandler.Delete)
 
 		// === Users (requires user permissions) ===
 		users := protected.Group("/users")

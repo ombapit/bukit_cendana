@@ -45,6 +45,7 @@ func main() {
 		&models.Warga{},
 		&models.IPL{},
 		&models.Finance{},
+		&models.Pengumuman{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -63,6 +64,7 @@ func main() {
 	wargaRepo := repositories.NewWargaRepository(db)
 	iplRepo := repositories.NewIPLRepository(db)
 	financeRepo := repositories.NewFinanceRepository(db)
+	pengumumanRepo := repositories.NewPengumumanRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, rdb, cfg)
@@ -73,6 +75,7 @@ func main() {
 	wargaService := services.NewWargaService(wargaRepo)
 	financeService := services.NewFinanceService(financeRepo)
 	iplService := services.NewIPLService(iplRepo, financeService)
+	pengumumanService := services.NewPengumumanService(pengumumanRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -83,6 +86,7 @@ func main() {
 	wargaHandler := handlers.NewWargaHandler(wargaService)
 	iplHandler := handlers.NewIPLHandler(iplService)
 	financeHandler := handlers.NewFinanceHandler(financeService)
+	pengumumanHandler := handlers.NewPengumumanHandler(pengumumanService)
 
 	// Setup Gin
 	if cfg.AppEnv == "production" {
@@ -104,7 +108,7 @@ func main() {
 	})
 
 	// Setup routes
-	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, iplHandler, financeHandler, authService)
+	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, iplHandler, financeHandler, pengumumanHandler, authService)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.AppPort)

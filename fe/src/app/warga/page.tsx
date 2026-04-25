@@ -7,6 +7,7 @@ import type { WargaWithLastPayment } from "@/types";
 import { Search, Loader2, ArrowLeft } from "lucide-react";
 import { useLocale } from "@/contexts/locale-context";
 import { PublicNavbar } from "@/components/public-navbar";
+import { PublicFooter } from "@/components/public-footer";
 import Link from "next/link";
 
 const bulanIndonesia: Record<string, string> = {
@@ -150,10 +151,10 @@ export default function WargaPage() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <PublicNavbar />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-8">
           <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-4">
             <ArrowLeft className="w-4 h-4" />
@@ -272,6 +273,7 @@ export default function WargaPage() {
           </>
         )}
       </div>
+      <PublicFooter />
     </div>
   );
 }

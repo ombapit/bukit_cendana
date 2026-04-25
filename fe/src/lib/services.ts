@@ -3,6 +3,7 @@ import type {
   APIResponse,
   Finance,
   FinanceSummary,
+  Pengumuman,
   LoginRequest,
   LoginResponse,
   CreateUserRequest,
@@ -176,6 +177,33 @@ export const financeService = {
 
   delete: (id: string) =>
     api.delete<APIResponse>(`/finance/${id}`),
+};
+
+// ============ Pengumuman ============
+export const pengumumanService = {
+  getAll: (page = 1, limit = 12, search = "", kategori = "", publishedOnly = false) => {
+    let url = `/pengumuman?page=${page}&limit=${limit}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (kategori) url += `&kategori=${encodeURIComponent(kategori)}`;
+    if (publishedOnly) url += `&published_only=true`;
+    return api.get<APIResponse<Pengumuman[]>>(url);
+  },
+
+  getById: (id: string) =>
+    api.get<APIResponse<Pengumuman>>(`/pengumuman/${id}`),
+
+  create: (data: FormData) =>
+    api.post<APIResponse<Pengumuman>>("/pengumuman", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+
+  update: (id: string, data: FormData) =>
+    api.put<APIResponse<Pengumuman>>(`/pengumuman/${id}`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+
+  delete: (id: string) =>
+    api.delete<APIResponse>(`/pengumuman/${id}`),
 };
 
 // ============ IPL ============

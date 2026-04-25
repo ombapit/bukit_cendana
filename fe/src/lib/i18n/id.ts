@@ -51,7 +51,7 @@ const id = {
       pengumuman: { title: "Pengumuman", desc: "Buat dan bagikan pengumuman penting kepada seluruh warga dengan mudah melalui dashboard admin." },
       laporan: { title: "Laporan", desc: "Lihat laporan keuangan dan statistik lainnya untuk membantu pengelolaan lingkungan RT." },
     },
-    footer: "Dari Oleh dan Untuk Warga Cendana © Ombapit / 2026",
+    footer: "Dari Oleh dan Untuk Warga Cendana © 2026",
   },
 
   // Auth / Login
