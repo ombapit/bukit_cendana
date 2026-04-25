@@ -23,6 +23,7 @@ func Setup(
 	iplHandler *handlers.IPLHandler,
 	financeHandler *handlers.FinanceHandler,
 	pengumumanHandler *handlers.PengumumanHandler,
+	qurbanHandler *handlers.QurbanHandler,
 	authService *services.AuthService,
 ) {
 	// Swagger
@@ -105,6 +106,11 @@ func Setup(
 		protected.POST("/pengumuman", middleware.RBACMiddleware(authService, "pengumuman.create"), pengumumanHandler.Create)
 		protected.PUT("/pengumuman/:id", middleware.RBACMiddleware(authService, "pengumuman.update"), pengumumanHandler.Update)
 		protected.DELETE("/pengumuman/:id", middleware.RBACMiddleware(authService, "pengumuman.delete"), pengumumanHandler.Delete)
+
+		// === Qurban ===
+		protected.GET("/qurban", middleware.RBACMiddleware(authService, "qurban.view"), qurbanHandler.FindAll)
+		protected.POST("/qurban", middleware.RBACMiddleware(authService, "qurban.create"), qurbanHandler.Create)
+		protected.DELETE("/qurban/:id", middleware.RBACMiddleware(authService, "qurban.delete"), qurbanHandler.Delete)
 
 		// === Users (requires user permissions) ===
 		users := protected.Group("/users")

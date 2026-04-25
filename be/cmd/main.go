@@ -65,6 +65,7 @@ func main() {
 	iplRepo := repositories.NewIPLRepository(db)
 	financeRepo := repositories.NewFinanceRepository(db)
 	pengumumanRepo := repositories.NewPengumumanRepository(db)
+	qurbanRepo := repositories.NewQurbanRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, rdb, cfg)
@@ -76,6 +77,10 @@ func main() {
 	financeService := services.NewFinanceService(financeRepo)
 	iplService := services.NewIPLService(iplRepo, financeService)
 	pengumumanService := services.NewPengumumanService(pengumumanRepo)
+	qurbanService := services.NewQurbanService(qurbanRepo)
+
+	// Generate QR codes for existing warga that don't have one yet
+	wargaService.SeedQRCodes()
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -87,6 +92,7 @@ func main() {
 	iplHandler := handlers.NewIPLHandler(iplService)
 	financeHandler := handlers.NewFinanceHandler(financeService)
 	pengumumanHandler := handlers.NewPengumumanHandler(pengumumanService)
+	qurbanHandler := handlers.NewQurbanHandler(qurbanService)
 
 	// Setup Gin
 	if cfg.AppEnv == "production" {
@@ -108,7 +114,7 @@ func main() {
 	})
 
 	// Setup routes
-	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, iplHandler, financeHandler, pengumumanHandler, authService)
+	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, iplHandler, financeHandler, pengumumanHandler, qurbanHandler, authService)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.AppPort)

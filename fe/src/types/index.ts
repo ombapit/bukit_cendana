@@ -190,6 +190,7 @@ export interface WargaWithLastPayment {
   blok: string;
   no_telp?: string;
   iuran: number;
+  qr_code?: string;
   last_payment: string;
 }
 
@@ -252,5 +253,15 @@ export interface IPL {
   warga_blok: string;
   tanggal_ipl: string;
   gambar: string;
+  created_at: string;
+}
+
+export interface PengambilanQurban {
+  id: string;
+  warga_id: string;
+  nama_warga: string;
+  blok_warga: string;
+  status: string;
+  created_by: string;
   created_at: string;
 }

@@ -24,6 +24,7 @@ import type {
   CreateWargaRequest,
   UpdateWargaRequest,
   IPL,
+  PengambilanQurban,
 } from "@/types";
 
 // ============ Auth ============
@@ -226,4 +227,19 @@ export const iplService = {
 
   delete: (id: string) =>
     api.delete<APIResponse>(`/ipls/${id}`),
+};
+
+// ============ Qurban ============
+export const qurbanService = {
+  getAll: (page = 1, limit = 100, search = "") => {
+    let url = `/qurban?page=${page}&limit=${limit}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return api.get<APIResponse<PengambilanQurban[]>>(url);
+  },
+
+  create: (data: { warga_id: string; status: string }) =>
+    api.post<APIResponse<PengambilanQurban>>("/qurban", data),
+
+  delete: (id: string) =>
+    api.delete<APIResponse>(`/qurban/${id}`),
 };

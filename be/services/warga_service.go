@@ -2,9 +2,11 @@ package services
 
 import (
 	"errors"
+	"log"
 
 	"247-golang-api/models"
 	"247-golang-api/repositories"
+	"247-golang-api/utils"
 
 	"github.com/google/uuid"
 )
@@ -29,6 +31,16 @@ func (s *WargaService) Create(req models.CreateWargaRequest) (*models.WargaRespo
 		return nil, errors.New("failed to create warga")
 	}
 
+	// Generate QR code immediately after creation
+	id := warga.ID.String()
+	qrPath, err := utils.GenerateWargaQR(id, warga.Nama, warga.Blok)
+	if err != nil {
+		log.Printf("[WARN] Failed to generate QR for warga %s: %v", id, err)
+	} else {
+		_ = s.wargaRepo.UpdateQRCode(id, qrPath)
+		warga.QRCode = qrPath
+	}
+
 	created, err := s.wargaRepo.FindByID(warga.ID)
 	if err != nil {
 		return nil, err
@@ -36,6 +48,31 @@ func (s *WargaService) Create(req models.CreateWargaRequest) (*models.WargaRespo
 
 	resp := created.ToResponse()
 	return &resp, nil
+}
+
+// SeedQRCodes generates QR codes for all existing warga that don't have one yet.
+func (s *WargaService) SeedQRCodes() {
+	wargas, err := s.wargaRepo.FindAllWithoutQR()
+	if err != nil {
+		log.Printf("[WARN] SeedQRCodes: failed to fetch warga: %v", err)
+		return
+	}
+	if len(wargas) == 0 {
+		return
+	}
+	log.Printf("[QR] Generating QR codes for %d warga...", len(wargas))
+	for _, w := range wargas {
+		id := w.ID.String()
+		qrPath, err := utils.GenerateWargaQR(id, w.Nama, w.Blok)
+		if err != nil {
+			log.Printf("[WARN] QR failed for %s: %v", id, err)
+			continue
+		}
+		if err := s.wargaRepo.UpdateQRCode(id, qrPath); err != nil {
+			log.Printf("[WARN] QR DB update failed for %s: %v", id, err)
+		}
+	}
+	log.Printf("[QR] Done generating QR codes")
 }
 
 func (s *WargaService) FindByID(id uuid.UUID) (*models.WargaResponse, error) {
@@ -90,6 +127,16 @@ func (s *WargaService) Update(id uuid.UUID, req models.UpdateWargaRequest) (*mod
 
 	if err := s.wargaRepo.Update(warga); err != nil {
 		return nil, errors.New("failed to update warga")
+	}
+
+	// Hapus QR lama dan generate ulang
+	idStr := id.String()
+	utils.DeleteWargaQR(idStr)
+	qrPath, err := utils.GenerateWargaQR(idStr, warga.Nama, warga.Blok)
+	if err != nil {
+		log.Printf("[WARN] Failed to regenerate QR for warga %s: %v", idStr, err)
+	} else {
+		_ = s.wargaRepo.UpdateQRCode(idStr, qrPath)
 	}
 
 	updated, _ := s.wargaRepo.FindByID(id)

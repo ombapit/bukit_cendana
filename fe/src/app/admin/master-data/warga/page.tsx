@@ -14,6 +14,8 @@ import {
   Search,
   Loader2,
   FileDown,
+  QrCode,
+  Download,
 } from "lucide-react";
 
 function formatIuran(value: number): string {
@@ -34,6 +36,12 @@ function formatLastPayment(val: string): string {
     "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
   };
   return `${bulanNames[bulan] || bulan} ${tahun}`;
+}
+
+function getQRImageURL(qrCode: string): string {
+  if (!qrCode) return "";
+  const base = (process.env.NEXT_PUBLIC_API_URL ?? "").replace("/api/v1", "");
+  return `${base}${qrCode}`;
 }
 
 const emptyForm = { nama: "", blok: "", no_telp: "", iuran: "" };
@@ -63,6 +71,9 @@ export default function WargaAdminPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingWarga, setDeletingWarga] = useState<WargaWithLastPayment | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // QR modal
+  const [qrWarga, setQrWarga] = useState<WargaWithLastPayment | null>(null);
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -184,6 +195,19 @@ export default function WargaAdminPage() {
     setDeleting(false);
   };
 
+  // ========== QR Download ==========
+  const handleDownloadQR = async (w: WargaWithLastPayment) => {
+    if (!w.qr_code) return;
+    const url = getQRImageURL(w.qr_code);
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `QR_${w.nama.replace(/\s+/g, "_")}_${w.blok}.png`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   const columns = [
     {
       key: "nama",
@@ -227,6 +251,26 @@ export default function WargaAdminPage() {
           {formatLastPayment(w.last_payment)}
         </span>
       ),
+    },
+    {
+      key: "qr_code",
+      header: "QR Code",
+      render: (w: WargaWithLastPayment) =>
+        w.qr_code ? (
+          <button
+            onClick={() => setQrWarga(w)}
+            className="group relative"
+            title="Lihat QR Code"
+          >
+            <img
+              src={getQRImageURL(w.qr_code)}
+              alt="QR"
+              className="w-10 h-10 rounded border border-white/30 dark:border-white/10 object-cover group-hover:opacity-80 transition-opacity"
+            />
+          </button>
+        ) : (
+          <span className="text-xs text-gray-400 dark:text-gray-500">-</span>
+        ),
     },
     {
       key: "actions",
@@ -324,21 +368,35 @@ export default function WargaAdminPage() {
             ) : (
               filtered.map((w) => (
                 <div key={w.id} className="glass rounded-xl p-4">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-3">
+                    {/* QR thumbnail on mobile */}
+                    {w.qr_code && (
+                      <button onClick={() => setQrWarga(w)} className="shrink-0" title="Lihat QR">
+                        <img
+                          src={getQRImageURL(w.qr_code)}
+                          alt="QR"
+                          className="w-14 h-14 rounded-lg border border-white/30 dark:border-white/10 object-cover"
+                        />
+                      </button>
+                    )}
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-900 dark:text-white truncate">{w.nama}</p>
-                      {w.no_telp && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{w.no_telp}</p>}
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => openEdit(w)} className="p-1.5 rounded-lg hover:bg-white/40 dark:hover:bg-white/5 transition-colors" title="Edit">
-                        <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                      </button>
-                      <button onClick={() => openDelete(w)} className="p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors" title="Hapus">
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900 dark:text-white truncate">{w.nama}</p>
+                          {w.no_telp && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{w.no_telp}</p>}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button onClick={() => openEdit(w)} className="p-1.5 rounded-lg hover:bg-white/40 dark:hover:bg-white/5 transition-colors" title="Edit">
+                            <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                          </button>
+                          <button onClick={() => openDelete(w)} className="p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors" title="Hapus">
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
+                        </div>
+                      </div>
+                      <span className="inline-block mt-2 px-2 py-0.5 text-xs rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">{w.blok}</span>
                     </div>
                   </div>
-                  <span className="inline-block mt-2 px-2 py-0.5 text-xs rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">{w.blok}</span>
                   <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-white/20 dark:border-white/5">
                     <div>
                       <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Iuran/Bulan</p>
@@ -513,6 +571,45 @@ export default function WargaAdminPage() {
             <Button variant="danger" onClick={handleDelete} loading={deleting}>Hapus</Button>
           </div>
         </div>
+      </Modal>
+
+      {/* ========== Modal: QR Code ========== */}
+      <Modal open={!!qrWarga} onClose={() => setQrWarga(null)} title="QR Code Warga" size="sm">
+        {qrWarga && (
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+              <QrCode className="w-4 h-4" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {qrWarga.nama}
+              </span>
+              <span className="px-2 py-0.5 text-xs rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
+                {qrWarga.blok}
+              </span>
+            </div>
+            {qrWarga.qr_code ? (
+              <img
+                src={getQRImageURL(qrWarga.qr_code)}
+                alt={`QR ${qrWarga.nama}`}
+                className="w-56 h-56 rounded-2xl border border-white/30 dark:border-white/10 bg-white p-2"
+              />
+            ) : (
+              <div className="w-56 h-56 rounded-2xl border border-white/30 dark:border-white/10 flex items-center justify-center text-gray-400">
+                QR tidak tersedia
+              </div>
+            )}
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+              Scan untuk identifikasi warga Perumahan Bukit Cendana
+            </p>
+            <Button
+              onClick={() => handleDownloadQR(qrWarga)}
+              disabled={!qrWarga.qr_code}
+              className="w-full"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Unduh QR Code
+            </Button>
+          </div>
+        )}
       </Modal>
     </div>
   );

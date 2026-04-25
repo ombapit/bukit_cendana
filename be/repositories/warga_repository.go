@@ -51,14 +51,15 @@ func (r *WargaRepository) FindAllWithLastPayment(page, limit int) ([]models.Warg
 	offset := (page - 1) * limit
 
 	err := r.db.Raw(`
-		SELECT 
+		SELECT
 			w.id::text as id,
 			w.nama,
 			w.blok,
 			w.no_telp,
 			w.iuran,
+			COALESCE(w.qr_code, '') as qr_code,
 			COALESCE((
-				SELECT MAX(t.tanggal_ipl) 
+				SELECT MAX(t.tanggal_ipl)
 				FROM ipls t
 				WHERE t.warga_id = w.id
 			), '') as last_payment
@@ -82,14 +83,15 @@ func (r *WargaRepository) FindByTunggakan(page, limit, bulan int) ([]models.Warg
 
 	err := r.db.Raw(fmt.Sprintf(`
 		WITH warga_with_payment AS (
-			SELECT 
+			SELECT
 				w.id,
 				w.nama,
 				w.blok,
 				w.no_telp,
 				w.iuran,
+				COALESCE(w.qr_code, '') as qr_code,
 				COALESCE((
-					SELECT MAX(t.tanggal_ipl) 
+					SELECT MAX(t.tanggal_ipl)
 					FROM ipls t
 					WHERE t.warga_id = w.id
 				), '') as last_payment
@@ -125,6 +127,17 @@ func (r *WargaRepository) FindByTunggakan(page, limit, bulan int) ([]models.Warg
 
 func (r *WargaRepository) Update(warga *models.Warga) error {
 	return r.db.Save(warga).Error
+}
+
+func (r *WargaRepository) UpdateQRCode(id, qrPath string) error {
+	return r.db.Exec(`UPDATE warga SET qr_code = ? WHERE id = ?`, qrPath, id).Error
+}
+
+// FindAllWithoutQR returns all warga that have no QR code generated yet.
+func (r *WargaRepository) FindAllWithoutQR() ([]models.Warga, error) {
+	var wargas []models.Warga
+	err := r.db.Where("qr_code = '' OR qr_code IS NULL").Find(&wargas).Error
+	return wargas, err
 }
 
 func (r *WargaRepository) Delete(id uuid.UUID) error {
