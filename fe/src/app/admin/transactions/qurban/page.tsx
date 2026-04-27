@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { qurbanService, wargaService } from "@/lib/services";
+import { generateKuponQurbanPDF } from "@/lib/kupon-qurban";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
@@ -9,7 +10,7 @@ import { QRScanner } from "@/components/ui/qr-scanner";
 import type { PengambilanQurban, WargaWithLastPayment } from "@/types";
 import {
   Plus, Trash2, Search, Loader2, FileDown,
-  ScanLine, X,
+  ScanLine, X, Printer,
 } from "lucide-react";
 import ExcelJS from "exceljs";
 
@@ -159,6 +160,7 @@ export default function QurbanPage() {
   const [total, setTotal] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   // Create modal
   const [createOpen, setCreateOpen] = useState(false);
@@ -347,7 +349,24 @@ export default function QurbanPage() {
             Rekap pengambilan daging qurban warga Bukit Cendana
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              setPrinting(true);
+              try {
+                const res = await wargaService.getAll(1, 1000);
+                const wargas = res.data?.data || [];
+                await generateKuponQurbanPDF(wargas);
+              } finally {
+                setPrinting(false);
+              }
+            }}
+            loading={printing}
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            Cetak Kupon
+          </Button>
           <Button
             variant="outline"
             onClick={async () => {
