@@ -75,9 +75,9 @@ services:
     networks:
       - bukitcendana-network
 
-# volumes:
+volumes:
 #   postgres_data:
-  # redis_data:
+  redis_data:
 
 networks:
   shared-net:
