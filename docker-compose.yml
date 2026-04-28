@@ -10,6 +10,8 @@ services:
       context: ./be
       dockerfile: Dockerfile
     container_name: bukitcendana-be
+    networks:
+      - shared-net
     ports:
       - "8082:8080"
     env_file:
@@ -33,7 +35,7 @@ services:
         NEXT_PUBLIC_API_URL: https://bukitcendana.my.id/api/v1
     container_name: bukitcendana-fe
     ports:
-      - "3006:3000"
+      - "3000:3000"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
@@ -58,26 +60,28 @@ services:
 #     networks:
 #       - bukitcendana-network
 
-#   redis:
-#     image: redis:7-alpine
-#     container_name: bukitcendana-redis
-#     ports:
-#       - "6379:6379"
-#     volumes:
-#       - redis_data:/data
-#     healthcheck:
-#       test: ["CMD", "redis-cli", "ping"]
-#       interval: 5s
-#       timeout: 5s
-#       retries: 5
-#     restart: unless-stopped
-#     networks:
-#       - bukitcendana-network
+  redis:
+    image: redis:7-alpine
+    container_name: bukitcendana-redis
+    # ports:
+    #   - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - bukitcendana-network
 
 # volumes:
 #   postgres_data:
-#   redis_data:
+  # redis_data:
 
 networks:
+  shared-net:
+    external: true
   bukitcendana-network:
     driver: bridge
