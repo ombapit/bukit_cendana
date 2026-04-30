@@ -1,0 +1,45 @@
+# ── Environment ──────────────────────────────
+.env
+.env.local
+.env.*.local
+*.env
+
+# ── Backend (Go) ─────────────────────────────
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+tmp/
+be/uploads/
+
+# ── Frontend (Next.js) ───────────────────────
+node_modules/
+.next/
+out/
+build/
+dist/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+
+# ── Logs ─────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# ── Editor / OS ──────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── Misc ─────────────────────────────────────
+coverage/
+.cache/

@@ -5,39 +5,39 @@ services:
   # Pastikan DB_HOST=postgres dan REDIS_HOST=redis
   # di .env jika menggunakan mode ini.
   # ============================================
-  api:
-    build:
-      context: ./be
-      dockerfile: Dockerfile
-    container_name: bukitcendana-be
-    ports:
-      - "8082:8080"
-    env_file:
-      - be/.env
-        #    depends_on:
-        #postgres:
-        #condition: service_healthy
-        #redis:
-        #condition: service_healthy
-    volumes:
-      - ./uploads:/app/uploads
-    restart: unless-stopped
-    networks:
-      - shared-net
-      - bukitcendana-network
+  # api:
+  #   build:
+  #     context: ./be
+  #     dockerfile: Dockerfile
+  #   container_name: bukitcendana-be
+  #   ports:
+  #     - "8082:8080"
+  #   env_file:
+  #     - be/.env
+  #       #    depends_on:
+  #       #postgres:
+  #       #condition: service_healthy
+  #       #redis:
+  #       #condition: service_healthy
+  #   volumes:
+  #     - ./uploads:/app/uploads
+  #   restart: unless-stopped
+  #   networks:
+  #     - shared-net
+  #     - bukitcendana-network
 
-  app:
-    build:
-      context: ./fe
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: https://bukitcendana.my.id/api/v1
-    container_name: bukitcendana-fe
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-    restart: unless-stopped
+  # app:
+  #   build:
+  #     context: ./fe
+  #     dockerfile: Dockerfile
+  #     args:
+  #       NEXT_PUBLIC_API_URL: https://bukitcendana.my.id/api/v1
+  #   container_name: bukitcendana-fe
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=production
+  #   restart: unless-stopped
 
 #   postgres:
 #     image: postgres:16-alpine
@@ -62,8 +62,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: bukitcendana-redis
-    # ports:
-    #   - "6379:6379"
+    ports:
+      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:

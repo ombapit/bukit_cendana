@@ -46,6 +46,7 @@ async function exportQurbanXLS(filename: string, rows: PengambilanQurban[]) {
     });
     row.getCell("status").font = {
       color: { argb: r.status === "Sudah Diambil" ? "FF16A34A" : "FFCA8A04" },
+      bold: true,
     };
   });
   const buffer = await wb.xlsx.writeBuffer();
@@ -167,6 +168,7 @@ export default function QurbanPage() {
   const [allWarga, setAllWarga] = useState<WargaWithLastPayment[]>([]);
   const [wargaLoading, setWargaLoading] = useState(false);
   const [selectedWargaID, setSelectedWargaID] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("Kupon Sudah Dibagikan");
   const [createError, setCreateError] = useState("");
   const [creating, setCreating] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -203,6 +205,7 @@ export default function QurbanPage() {
   // ── Create ─────────────────────────────────────────────────────────────
   const openCreate = async () => {
     setSelectedWargaID("");
+    setSelectedStatus("Kupon Sudah Dibagikan");
     setCreateError("");
     setScanFeedback(null);
     setCreateOpen(true);
@@ -226,7 +229,7 @@ export default function QurbanPage() {
     setCreating(true);
     setCreateError("");
     try {
-      await qurbanService.create({ warga_id: selectedWargaID, status: "Sudah Diambil" });
+      await qurbanService.create({ warga_id: selectedWargaID, status: selectedStatus });
       setCreateOpen(false);
       showSuccess("Data pengambilan qurban berhasil disimpan");
       fetchRecords();
@@ -307,6 +310,19 @@ export default function QurbanPage() {
       render: (r: PengambilanQurban) => (
         <span className="px-2 py-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded text-sm font-medium">
           {r.blok_warga}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (r: PengambilanQurban) => (
+        <span className={`px-2 py-1 rounded text-sm font-medium ${
+          r.status === "Sudah Diambil"
+            ? "bg-green-500/10 text-green-700 dark:text-green-400"
+            : "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+        }`}>
+          {r.status}
         </span>
       ),
     },
@@ -423,9 +439,18 @@ export default function QurbanPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-semibold text-gray-900 dark:text-white truncate">{r.nama_warga}</p>
-                      <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
-                        {r.blok_warga}
-                      </span>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        <span className="inline-block px-2 py-0.5 text-xs rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
+                          {r.blok_warga}
+                        </span>
+                        <span className={`inline-block px-2 py-0.5 text-xs rounded font-medium ${
+                          r.status === "Sudah Diambil"
+                            ? "bg-green-500/10 text-green-700 dark:text-green-400"
+                            : "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                        }`}>
+                          {r.status}
+                        </span>
+                      </div>
                     </div>
                     <button onClick={() => openDelete(r)} className="p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors shrink-0">
                       <Trash2 className="w-4 h-4 text-red-600" />
