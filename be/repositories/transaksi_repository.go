@@ -30,7 +30,7 @@ func (r *IPLRepository) FindByID(id uuid.UUID) (*models.IPL, error) {
 	return &ipl, nil
 }
 
-func (r *IPLRepository) FindAll(page, limit int, search string) ([]models.IPLResponse, int64, error) {
+func (r *IPLRepository) FindAll(page, limit int, search, blok string) ([]models.IPLResponse, int64, error) {
 	var results []models.IPLResponse
 	var total int64
 
@@ -41,8 +41,15 @@ func (r *IPLRepository) FindAll(page, limit int, search string) ([]models.IPLRes
 
 	if search != "" {
 		like := "%" + search + "%"
-		countQ = countQ.Where("warga.nama ILIKE ? OR warga.blok ILIKE ? OR ipls.tanggal_ipl LIKE ?", like, like, like)
-		dataQ = dataQ.Where("warga.nama ILIKE ? OR warga.blok ILIKE ? OR ipls.tanggal_ipl LIKE ?", like, like, like)
+		countQ = countQ.Where("warga.nama ILIKE ? OR ipls.tanggal_ipl LIKE ?", like, like)
+		dataQ = dataQ.Where("warga.nama ILIKE ? OR ipls.tanggal_ipl LIKE ?", like, like)
+	}
+
+	if blok != "" {
+		// Prefix-match: "A1" cocok dengan "A1" exact dan "A1/12", "A1/13" dst — tapi BUKAN "A10"
+		prefix := blok + "/%"
+		countQ = countQ.Where("warga.blok = ? OR warga.blok ILIKE ?", blok, prefix)
+		dataQ = dataQ.Where("warga.blok = ? OR warga.blok ILIKE ?", blok, prefix)
 	}
 
 	countQ.Count(&total)

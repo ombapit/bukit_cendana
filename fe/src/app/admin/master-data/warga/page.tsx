@@ -50,6 +50,7 @@ export default function WargaAdminPage() {
   const [wargas, setWargas] = useState<WargaWithLastPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterBlok, setFilterBlok] = useState("");
   const [total, setTotal] = useState(0);
 
   const [successMsg, setSuccessMsg] = useState("");
@@ -98,16 +99,22 @@ export default function WargaAdminPage() {
     fetchWargas();
   }, [fetchWargas]);
 
-  const filtered = search
-    ? wargas.filter((w) => {
-        const s = search.toLowerCase();
-        return (
-          w.nama.toLowerCase().includes(s) ||
-          w.blok.toLowerCase().includes(s) ||
-          (w.no_telp || "").includes(s)
-        );
-      })
-    : wargas;
+  const blokPrefix = (b: string) => (b || "").split("/")[0].trim();
+
+  const blokOptions = Array.from(new Set(wargas.map((w) => blokPrefix(w.blok)).filter(Boolean)))
+    .sort((a, b) => a.localeCompare(b, "id", { numeric: true }));
+
+  const filtered = wargas.filter((w) => {
+    if (filterBlok && blokPrefix(w.blok) !== filterBlok) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      return (
+        w.nama.toLowerCase().includes(s) ||
+        (w.no_telp || "").includes(s)
+      );
+    }
+    return true;
+  });
 
   // ========== Create ==========
   const openCreate = () => {
@@ -340,18 +347,28 @@ export default function WargaAdminPage() {
         </div>
       )}
 
-      {/* Search */}
-      <div className="mb-4">
-        <div className="relative">
+      {/* Search & Filter */}
+      <div className="mb-4 flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
-            placeholder="Cari nama, blok, atau no. telp..."
+            placeholder="Cari nama atau no. telp..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent backdrop-blur-sm dark:text-slate-100 dark:placeholder:text-gray-500"
           />
         </div>
+        <select
+          value={filterBlok}
+          onChange={(e) => setFilterBlok(e.target.value)}
+          className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 dark:bg-white/5 dark:text-slate-100 sm:w-48"
+        >
+          <option value="">Semua Blok</option>
+          {blokOptions.map((b) => (
+            <option key={b} value={b}>{b}</option>
+          ))}
+        </select>
       </div>
 
       {/* Table */}

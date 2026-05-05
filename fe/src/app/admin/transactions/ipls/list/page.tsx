@@ -61,6 +61,7 @@ export default function IPLListPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterBlok, setFilterBlok] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -131,7 +132,7 @@ export default function IPLListPage() {
     return w ? `${w.nama} — ${w.blok}` : "";
   }, [createForm.warga_id, wargas]);
 
-  // Debounce: reset page ke 1 dan trigger fetch setelah 400ms idle
+  // Debounce search → reset ke page 1
   useEffect(() => {
     const t = setTimeout(() => {
       setPage(1);
@@ -140,10 +141,13 @@ export default function IPLListPage() {
     return () => clearTimeout(t);
   }, [search]);
 
+  // Reset ke page 1 saat filter blok berubah
+  useEffect(() => { setPage(1); }, [filterBlok]);
+
   const fetchIPLs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await iplService.getAll(page, limit, debouncedSearch);
+      const res = await iplService.getAll(page, limit, debouncedSearch, filterBlok);
       const body = res.data;
       setIpls(body?.data || []);
       setTotal(body?.meta?.total || 0);
@@ -152,7 +156,7 @@ export default function IPLListPage() {
       setIpls([]);
     }
     setLoading(false);
-  }, [page, debouncedSearch]);
+  }, [page, debouncedSearch, filterBlok]);
 
   useEffect(() => {
     fetchIPLs();
@@ -164,6 +168,14 @@ export default function IPLListPage() {
       setWargas(res.data?.data || []);
     }).catch(() => {});
   }, []);
+
+  const blokPrefix = (b: string) => (b || "").split("/")[0].trim();
+
+  const blokOptions = useMemo(
+    () => Array.from(new Set(wargas.map((w) => blokPrefix(w.blok)).filter(Boolean)))
+      .sort((a, b) => a.localeCompare(b, "id", { numeric: true })),
+    [wargas],
+  );
 
   const pageRange = useMemo(() => {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1) as (number | "...")[];
@@ -365,18 +377,28 @@ export default function IPLListPage() {
         </div>
       )}
 
-      {/* Search */}
-      <div className="mb-4">
-        <div className="relative">
+      {/* Search & Filter */}
+      <div className="mb-4 flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
-            placeholder="Cari nama, blok, atau periode..."
+            placeholder="Cari nama atau periode..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent backdrop-blur-sm dark:text-slate-100 dark:placeholder:text-gray-500"
           />
         </div>
+        <select
+          value={filterBlok}
+          onChange={(e) => setFilterBlok(e.target.value)}
+          className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 dark:bg-white/5 dark:text-slate-100 sm:w-48"
+        >
+          <option value="">Semua Blok</option>
+          {blokOptions.map((b) => (
+            <option key={b} value={b}>{b}</option>
+          ))}
+        </select>
       </div>
 
       {/* Table */}

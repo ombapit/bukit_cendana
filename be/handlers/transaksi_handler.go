@@ -63,6 +63,7 @@ func (h *IPLHandler) FindAll(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	search := c.DefaultQuery("search", "")
+	blok := c.DefaultQuery("blok", "")
 
 	if page < 1 {
 		page = 1
@@ -71,7 +72,7 @@ func (h *IPLHandler) FindAll(c *gin.Context) {
 		limit = 20
 	}
 
-	ipls, total, err := h.iplService.FindAll(page, limit, search)
+	ipls, total, err := h.iplService.FindAll(page, limit, search, blok)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return

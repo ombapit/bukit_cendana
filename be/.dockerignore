@@ -1,0 +1,13 @@
+.env
+.git
+.gitignore
+*.md
+tmp/
+uploads/
+*.exe
+*.exe~
+*.test
+*.out
+vendor/
+.vscode/
+.idea/

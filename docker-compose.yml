@@ -16,9 +16,9 @@ services:
       - be/.env
     depends_on:
         postgres:
-        condition: service_healthy
+          condition: service_healthy
         redis:
-        condition: service_healthy
+          condition: service_healthy
     volumes:
       - ./be/uploads:/app/uploads
     restart: unless-stopped
@@ -47,7 +47,7 @@ services:
       POSTGRES_PASSWORD: bukitcendana_pass
       POSTGRES_DB: bukitcendana
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

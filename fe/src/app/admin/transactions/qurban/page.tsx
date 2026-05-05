@@ -158,6 +158,7 @@ export default function QurbanPage() {
   const [records, setRecords] = useState<PengambilanQurban[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterBlok, setFilterBlok] = useState("");
   const [total, setTotal] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -296,6 +297,15 @@ export default function QurbanPage() {
     setDeleting(false);
   };
 
+  const blokPrefix = (b: string) => (b || "").split("/")[0].trim();
+
+  const blokOptions = Array.from(new Set(records.map((r) => blokPrefix(r.blok_warga)).filter(Boolean)))
+    .sort((a, b) => a.localeCompare(b, "id", { numeric: true }));
+
+  const displayedRecords = filterBlok
+    ? records.filter((r) => blokPrefix(r.blok_warga) === filterBlok)
+    : records;
+
   const columns = [
     {
       key: "nama_warga",
@@ -409,18 +419,28 @@ export default function QurbanPage() {
         </div>
       )}
 
-      {/* Search */}
-      <div className="mb-4">
-        <div className="relative">
+      {/* Search & Filter */}
+      <div className="mb-4 flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
-            placeholder="Cari nama atau blok warga..."
+            placeholder="Cari nama warga..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent backdrop-blur-sm dark:text-slate-100 dark:placeholder:text-gray-500"
           />
         </div>
+        <select
+          value={filterBlok}
+          onChange={(e) => setFilterBlok(e.target.value)}
+          className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 dark:bg-white/5 dark:text-slate-100 sm:w-48"
+        >
+          <option value="">Semua Blok</option>
+          {blokOptions.map((b) => (
+            <option key={b} value={b}>{b}</option>
+          ))}
+        </select>
       </div>
 
       {/* Table */}
@@ -431,10 +451,10 @@ export default function QurbanPage() {
       ) : (
         <>
           <div className="lg:hidden space-y-3">
-            {records.length === 0 ? (
+            {displayedRecords.length === 0 ? (
               <p className="text-center text-gray-500 dark:text-gray-400 py-8">Belum ada data</p>
             ) : (
-              records.map((r) => (
+              displayedRecords.map((r) => (
                 <div key={r.id} className="glass rounded-xl p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -468,11 +488,13 @@ export default function QurbanPage() {
           </div>
 
           <div className="hidden lg:block">
-            <Table columns={columns} data={records} />
+            <Table columns={columns} data={displayedRecords} />
           </div>
 
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
-            Total {total} data tercatat
+            {filterBlok
+              ? `Menampilkan ${displayedRecords.length} dari ${total} data tercatat`
+              : `Total ${total} data tercatat`}
           </p>
         </>
       )}

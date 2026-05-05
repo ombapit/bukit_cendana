@@ -209,9 +209,10 @@ export const pengumumanService = {
 
 // ============ IPL ============
 export const iplService = {
-  getAll: (page = 1, limit = 20, search = "") => {
+  getAll: (page = 1, limit = 20, search = "", blok = "") => {
     let url = `/ipls?page=${page}&limit=${limit}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (blok) url += `&blok=${encodeURIComponent(blok)}`;
     return api.get<APIResponse<IPL[]>>(url);
   },
 

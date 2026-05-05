@@ -1,0 +1,14 @@
+.env*
+.git
+.gitignore
+*.md
+node_modules/
+.next/
+out/
+build/
+dist/
+.turbo/
+*.tsbuildinfo
+.vscode/
+.idea/
+coverage/

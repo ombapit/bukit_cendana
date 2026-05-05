@@ -64,8 +64,8 @@ func (s *IPLService) FindByID(id uuid.UUID) (*models.IPLResponse, error) {
 	return &resp, nil
 }
 
-func (s *IPLService) FindAll(page, limit int, search string) ([]models.IPLResponse, int64, error) {
-	return s.iplRepo.FindAll(page, limit, search)
+func (s *IPLService) FindAll(page, limit int, search, blok string) ([]models.IPLResponse, int64, error) {
+	return s.iplRepo.FindAll(page, limit, search, blok)
 }
 
 func (s *IPLService) Update(id uuid.UUID, req models.UpdateIPLRequest) (*models.IPLResponse, error) {

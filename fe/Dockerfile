@@ -1,3 +1,7 @@
+# syntax=docker/dockerfile:1.7
+# Next.js build emits platform-independent JS, but `sharp` (image optimizer) is
+# native — runner must match target arch. Build runs under target arch via QEMU
+# when cross-building (slower than Go cross-compile, but reliable).
 FROM node:20-alpine AS builder
 
 WORKDIR /app
