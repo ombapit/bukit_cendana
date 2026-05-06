@@ -46,6 +46,7 @@ func main() {
 		&models.IPL{},
 		&models.Finance{},
 		&models.Pengumuman{},
+		&models.ActivityLog{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -66,6 +67,7 @@ func main() {
 	financeRepo := repositories.NewFinanceRepository(db)
 	pengumumanRepo := repositories.NewPengumumanRepository(db)
 	qurbanRepo := repositories.NewQurbanRepository(db)
+	activityLogRepo := repositories.NewActivityLogRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, rdb, cfg)
@@ -78,6 +80,7 @@ func main() {
 	iplService := services.NewIPLService(iplRepo, financeService)
 	pengumumanService := services.NewPengumumanService(pengumumanRepo)
 	qurbanService := services.NewQurbanService(qurbanRepo)
+	activityLogService := services.NewActivityLogService(activityLogRepo)
 
 	// Generate QR codes for existing warga that don't have one yet
 	wargaService.SeedQRCodes()
@@ -93,6 +96,7 @@ func main() {
 	financeHandler := handlers.NewFinanceHandler(financeService)
 	pengumumanHandler := handlers.NewPengumumanHandler(pengumumanService)
 	qurbanHandler := handlers.NewQurbanHandler(qurbanService)
+	activityLogHandler := handlers.NewActivityLogHandler(activityLogService)
 
 	// Setup Gin
 	if cfg.AppEnv == "production" {
@@ -114,7 +118,7 @@ func main() {
 	})
 
 	// Setup routes
-	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, iplHandler, financeHandler, pengumumanHandler, qurbanHandler, authService)
+	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, iplHandler, financeHandler, pengumumanHandler, qurbanHandler, activityLogHandler, authService)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.AppPort)

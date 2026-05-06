@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { LocaleProvider } from "@/contexts/locale-context";
 import { AuthProvider } from "@/contexts/auth-context";
+import PageTracker from "@/components/page-tracker";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -32,7 +33,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 transition-colors">
         <ThemeProvider>
           <LocaleProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <PageTracker />
+              {children}
+            </AuthProvider>
           </LocaleProvider>
         </ThemeProvider>
       </body>

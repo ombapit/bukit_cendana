@@ -39,25 +39,25 @@ services:
   #     - NODE_ENV=production
   #   restart: unless-stopped
 
-#   postgres:
-#     image: postgres:16-alpine
-#     container_name: bukitcendana-postgres
-#     environment:
-#       POSTGRES_USER: bukitcendana
-#       POSTGRES_PASSWORD: bukitcendana_pass
-#       POSTGRES_DB: bukitcendana
-#     ports:
-#       - "5433:5432"
-#     volumes:
-#       - postgres_data:/var/lib/postgresql/data
-#     healthcheck:
-#       test: ["CMD-SHELL", "pg_isready -U bukitcendana"]
-#       interval: 5s
-#       timeout: 5s
-#       retries: 5
-#     restart: unless-stopped
-#     networks:
-#       - bukitcendana-network
+  postgres:
+    image: postgres:16-alpine
+    container_name: bukitcendana-postgres
+    environment:
+      POSTGRES_USER: bukitcendana
+      POSTGRES_PASSWORD: Bismillah123
+      POSTGRES_DB: bukitcendana
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bukitcendana"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - bukitcendana-network
 
   redis:
     image: redis:7-alpine
@@ -76,7 +76,7 @@ services:
       - bukitcendana-network
 
 volumes:
-#   postgres_data:
+  postgres_data:
   redis_data:
 
 networks:

@@ -25,6 +25,7 @@ import type {
   UpdateWargaRequest,
   IPL,
   PengambilanQurban,
+  ActivityLog,
 } from "@/types";
 
 // ============ Auth ============
@@ -228,6 +229,22 @@ export const iplService = {
 
   delete: (id: string) =>
     api.delete<APIResponse>(`/ipls/${id}`),
+};
+
+// ============ Activity Logs ============
+export const activityLogService = {
+  getAll: (page = 1, limit = 20, search = "") => {
+    let url = `/activity-logs?page=${page}&limit=${limit}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return api.get<APIResponse<ActivityLog[]>>(url);
+  },
+
+  track: (path: string) =>
+    api.post<APIResponse>("/activity-logs", {
+      path,
+      user_agent: navigator.userAgent,
+      referer: document.referrer,
+    }),
 };
 
 // ============ Qurban ============

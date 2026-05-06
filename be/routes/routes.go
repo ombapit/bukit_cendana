@@ -24,6 +24,7 @@ func Setup(
 	financeHandler *handlers.FinanceHandler,
 	pengumumanHandler *handlers.PengumumanHandler,
 	qurbanHandler *handlers.QurbanHandler,
+	activityLogHandler *handlers.ActivityLogHandler,
 	authService *services.AuthService,
 ) {
 	// Swagger
@@ -45,6 +46,9 @@ func Setup(
 		auth.POST("/login", authHandler.Login)
 		auth.POST("/refresh", authHandler.RefreshToken)
 	}
+
+	// === Public: Activity log (no auth — fired by public page visits) ===
+	api.POST("/activity-logs", activityLogHandler.Create)
 
 	// === Public: Warga (no auth required) ===
 	warga := api.Group("/warga")
@@ -142,6 +146,9 @@ func Setup(
 			permissions.PUT("/:id", middleware.RBACMiddleware(authService, "permission.update"), permHandler.Update)
 			permissions.DELETE("/:id", middleware.RBACMiddleware(authService, "permission.delete"), permHandler.Delete)
 		}
+
+		// === Activity Logs (admin view) ===
+		protected.GET("/activity-logs", middleware.RBACMiddleware(authService, "activity_log.view"), activityLogHandler.FindAll)
 
 		// === Menus (requires menu permissions) ===
 		menus := protected.Group("/menus")

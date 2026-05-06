@@ -265,3 +265,12 @@ export interface PengambilanQurban {
   created_by: string;
   created_at: string;
 }
+
+export interface ActivityLog {
+  id: string;
+  path: string;
+  ip: string;
+  user_agent: string;
+  referer: string;
+  created_at: string;
+}
