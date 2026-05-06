@@ -63,7 +63,15 @@ export default function UsersPage() {
 
   // Fetch roles sekali saat mount
   useEffect(() => {
-    roleService.getAll().then((r) => setRoles(r.data.data || [])).catch(() => {});
+    const loadRoles = async () => {
+      try {
+        const res = await roleService.getAll();
+        setRoles(res.data.data || []);
+      } catch {
+        setRoles([]);
+      }
+    };
+    loadRoles();
   }, []);
 
   // Fetch users saat page berubah
@@ -82,7 +90,15 @@ export default function UsersPage() {
     : users;
 
   // ========== Create ==========
-  const openCreate = () => {
+  const openCreate = async () => {
+    // Ensure roles are loaded
+    if (roles.length === 0) {
+      try {
+        const res = await roleService.getAll();
+        setRoles(res.data.data || []);
+      } catch { /* ignore */ }
+    }
+
     setEditingUser(null);
     setForm({ username: "", email: "", password: "", full_name: "", role_id: "", is_active: true });
     setShowPassword(false);
@@ -91,7 +107,15 @@ export default function UsersPage() {
   };
 
   // ========== Edit ==========
-  const openEdit = (u: UserResponse) => {
+  const openEdit = async (u: UserResponse) => {
+    // Ensure roles are loaded
+    if (roles.length === 0) {
+      try {
+        const res = await roleService.getAll();
+        setRoles(res.data.data || []);
+      } catch { /* ignore */ }
+    }
+
     setEditingUser(u);
     setForm({
       username: u.username,
@@ -111,12 +135,14 @@ export default function UsersPage() {
     setError("");
     try {
       if (editingUser) {
-        await userService.update(editingUser.id, {
-          email: form.email || undefined,
-          full_name: form.full_name || undefined,
-          role_id: form.role_id || undefined,
+        const updateData: any = {
           is_active: form.is_active,
-        });
+        };
+        if (form.email) updateData.email = form.email;
+        if (form.full_name) updateData.full_name = form.full_name;
+        if (form.role_id) updateData.role_id = form.role_id;
+
+        await userService.update(editingUser.id, updateData);
       } else {
         if (!form.username || !form.email || !form.password || !form.full_name || !form.role_id) {
           setError(t.users.allFieldsRequired);

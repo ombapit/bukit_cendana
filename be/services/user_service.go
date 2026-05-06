@@ -90,8 +90,8 @@ func (s *UserService) Update(id uuid.UUID, req models.UpdateUserRequest) (*model
 	if req.IsActive != nil {
 		user.IsActive = *req.IsActive
 	}
-	if req.RoleID != uuid.Nil {
-		user.RoleID = req.RoleID
+	if req.RoleID != nil {
+		user.RoleID = *req.RoleID
 	}
 
 	if err := s.userRepo.Update(user); err != nil {

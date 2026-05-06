@@ -56,10 +56,10 @@ type CreateUserRequest struct {
 }
 
 type UpdateUserRequest struct {
-	Email    string    `json:"email" binding:"omitempty,email" example:"updated@example.com"`
-	FullName string    `json:"full_name" example:"Nama Baru"`
-	IsActive *bool     `json:"is_active" example:"true"`
-	RoleID   uuid.UUID `json:"role_id" example:"10000000-0000-0000-0000-000000000004"`
+	Email    string     `json:"email" binding:"omitempty,email" example:"updated@example.com"`
+	FullName string     `json:"full_name" example:"Nama Baru"`
+	IsActive *bool      `json:"is_active" example:"true"`
+	RoleID   *uuid.UUID `json:"role_id" example:"10000000-0000-0000-0000-000000000004"`
 }
 
 type ChangePasswordRequest struct {
