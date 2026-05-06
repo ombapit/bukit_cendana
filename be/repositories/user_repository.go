@@ -58,7 +58,7 @@ func (r *UserRepository) FindAll(page, limit int) ([]models.User, int64, error) 
 }
 
 func (r *UserRepository) Update(user *models.User) error {
-	return r.db.Save(user).Error
+	return r.db.Model(user).Select("email", "full_name", "is_active", "role_id", "password", "salt", "updated_at").Updates(user).Error
 }
 
 func (r *UserRepository) Delete(id uuid.UUID) error {
