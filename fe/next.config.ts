@@ -3,10 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
 
-  // Build optimization
-  swcMinify: true,
-  compress: true,
-
   // Experimental features for faster builds
   experimental: {
     // Optimized package imports for better tree-shaking
