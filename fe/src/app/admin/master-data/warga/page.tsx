@@ -53,6 +53,7 @@ export default function WargaAdminPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterBlok, setFilterBlok] = useState("");
+  const [filterKondisi, setFilterKondisi] = useState("");
   const [total, setTotal] = useState(0);
 
   const [successMsg, setSuccessMsg] = useState("");
@@ -108,6 +109,7 @@ export default function WargaAdminPage() {
 
   const filtered = wargas.filter((w) => {
     if (filterBlok && blokPrefix(w.blok) !== filterBlok) return false;
+    if (filterKondisi && (w.kondisi_rumah || "") !== filterKondisi) return false;
     if (search) {
       const s = search.toLowerCase();
       return (
@@ -385,11 +387,21 @@ export default function WargaAdminPage() {
         <select
           value={filterBlok}
           onChange={(e) => setFilterBlok(e.target.value)}
-          className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 dark:bg-white/5 dark:text-slate-100 sm:w-48"
+          className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 dark:bg-white/5 dark:text-slate-100 sm:w-40"
         >
           <option value="">Semua Blok</option>
           {blokOptions.map((b) => (
             <option key={b} value={b}>{b}</option>
+          ))}
+        </select>
+        <select
+          value={filterKondisi}
+          onChange={(e) => setFilterKondisi(e.target.value)}
+          className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 dark:bg-white/5 dark:text-slate-100 sm:w-40"
+        >
+          <option value="">Semua Kondisi</option>
+          {KONDISI_OPTIONS.filter(Boolean).map((k) => (
+            <option key={k} value={k}>{k}</option>
           ))}
         </select>
       </div>

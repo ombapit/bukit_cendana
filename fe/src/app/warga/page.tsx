@@ -81,6 +81,7 @@ export default function WargaPage() {
   const [search, setSearch] = useState("");
   const [blokFilter, setBlokFilter] = useState("");
   const [tunggakanFilter, setTunggakanFilter] = useState("");
+  const [kondisiFilter, setKondisiFilter] = useState("");
 
   const fetchWarga = useCallback(async () => {
     setLoading(true);
@@ -107,7 +108,8 @@ export default function WargaPage() {
       w.blok.toLowerCase().includes(search.toLowerCase()) ||
       (w.no_telp || "").includes(search);
     const matchBlok = !blokFilter || w.blok.startsWith(blokFilter);
-    return matchSearch && matchBlok;
+    const matchKondisi = !kondisiFilter || (w.kondisi_rumah || "") === kondisiFilter;
+    return matchSearch && matchBlok && matchKondisi;
   });
 
   const columns = [
@@ -224,6 +226,16 @@ export default function WargaPage() {
             <option value="2">Tunggakan &gt; 2 Bulan</option>
             <option value="3">Tunggakan &gt; 3 Bulan</option>
             <option value="4">Tunggakan 4+ Bulan</option>
+          </select>
+          <select
+            value={kondisiFilter}
+            onChange={(e) => setKondisiFilter(e.target.value)}
+            className="min-w-0 lg:w-auto px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white"
+          >
+            <option value="">Semua Kondisi</option>
+            <option value="Ditinggali">Ditinggali</option>
+            <option value="Kosong">Kosong</option>
+            <option value="Disewakan">Disewakan</option>
           </select>
         </div>
 
