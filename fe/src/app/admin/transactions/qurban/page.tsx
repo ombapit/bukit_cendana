@@ -215,7 +215,7 @@ export default function QurbanPage() {
       const res = await wargaService.getAll(1, 1000);
       const all: WargaWithLastPayment[] = res.data?.data || [];
       const takenIDs = new Set(records.map((r) => r.warga_id));
-      setAllWarga(all.filter((w) => !takenIDs.has(String(w.id))));
+      setAllWarga(all.filter((w) => !takenIDs.has(String(w.id)) && w.kondisi_rumah !== "Kosong"));
     } catch {
       setAllWarga([]);
     }
@@ -382,7 +382,7 @@ export default function QurbanPage() {
               setPrinting(true);
               try {
                 const res = await wargaService.getAll(1, 1000);
-                const wargas = res.data?.data || [];
+                const wargas = (res.data?.data || []).filter((w: WargaWithLastPayment) => w.kondisi_rumah !== "Kosong");
                 await generateKuponQurbanPDF(wargas);
               } finally {
                 setPrinting(false);
