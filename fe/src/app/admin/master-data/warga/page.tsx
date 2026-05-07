@@ -44,7 +44,9 @@ function getQRImageURL(qrCode: string): string {
   return `${base}${qrCode}`;
 }
 
-const emptyForm = { nama: "", blok: "", no_telp: "", iuran: "" };
+const KONDISI_OPTIONS = ["", "Ditinggali", "Kosong", "Disewakan"] as const;
+
+const emptyForm = { nama: "", blok: "", no_telp: "", iuran: "", kondisi_rumah: "" };
 
 export default function WargaAdminPage() {
   const [wargas, setWargas] = useState<WargaWithLastPayment[]>([]);
@@ -136,6 +138,7 @@ export default function WargaAdminPage() {
         blok: createForm.blok.trim(),
         no_telp: createForm.no_telp.trim() || undefined,
         iuran: parseFloat(createForm.iuran) || 0,
+        kondisi_rumah: createForm.kondisi_rumah || undefined,
       });
       setCreateOpen(false);
       showSuccess("Warga berhasil ditambahkan");
@@ -154,6 +157,7 @@ export default function WargaAdminPage() {
       blok: w.blok,
       no_telp: w.no_telp || "",
       iuran: String(w.iuran),
+      kondisi_rumah: w.kondisi_rumah || "",
     });
     setEditError("");
     setEditOpen(true);
@@ -173,6 +177,7 @@ export default function WargaAdminPage() {
         blok: editForm.blok.trim(),
         no_telp: editForm.no_telp.trim(),
         iuran: parseFloat(editForm.iuran) || 0,
+        kondisi_rumah: editForm.kondisi_rumah,
       });
       setEditOpen(false);
       showSuccess("Data warga berhasil diperbarui");
@@ -231,6 +236,24 @@ export default function WargaAdminPage() {
           {w.blok}
         </span>
       ),
+    },
+    {
+      key: "kondisi_rumah",
+      header: "Kondisi",
+      render: (w: WargaWithLastPayment) => {
+        const kondisi = w.kondisi_rumah;
+        if (!kondisi) return <span className="text-gray-400 dark:text-gray-500 text-xs">-</span>;
+        const colors: Record<string, string> = {
+          "Ditinggali": "bg-green-500/10 text-green-700 dark:text-green-400",
+          "Kosong":     "bg-gray-500/10 text-gray-600 dark:text-gray-400",
+          "Disewakan":  "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+        };
+        return (
+          <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[kondisi] ?? "bg-gray-100 text-gray-600"}`}>
+            {kondisi}
+          </span>
+        );
+      },
     },
     {
       key: "no_telp",
@@ -411,7 +434,16 @@ export default function WargaAdminPage() {
                           </button>
                         </div>
                       </div>
-                      <span className="inline-block mt-2 px-2 py-0.5 text-xs rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">{w.blok}</span>
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                        <span className="px-2 py-0.5 text-xs rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">{w.blok}</span>
+                        {w.kondisi_rumah && (
+                          <span className={`px-2 py-0.5 text-xs rounded font-medium ${
+                            w.kondisi_rumah === "Ditinggali" ? "bg-green-500/10 text-green-700 dark:text-green-400" :
+                            w.kondisi_rumah === "Disewakan"  ? "bg-blue-500/10 text-blue-700 dark:text-blue-400" :
+                            "bg-gray-500/10 text-gray-600 dark:text-gray-400"
+                          }`}>{w.kondisi_rumah}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-white/20 dark:border-white/5">
@@ -487,7 +519,7 @@ export default function WargaAdminPage() {
                 className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Iuran/Bulan (Rp)
               </label>
@@ -499,6 +531,20 @@ export default function WargaAdminPage() {
                 placeholder="0"
                 className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Kondisi Rumah
+              </label>
+              <select
+                value={createForm.kondisi_rumah}
+                onChange={(e) => setCreateForm({ ...createForm, kondisi_rumah: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {KONDISI_OPTIONS.map((k) => (
+                  <option key={k} value={k}>{k || "— Tidak diisi —"}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t border-white/20 dark:border-white/10">
@@ -550,7 +596,7 @@ export default function WargaAdminPage() {
                 className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Iuran/Bulan (Rp)
               </label>
@@ -561,6 +607,20 @@ export default function WargaAdminPage() {
                 onChange={(e) => setEditForm({ ...editForm, iuran: e.target.value })}
                 className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Kondisi Rumah
+              </label>
+              <select
+                value={editForm.kondisi_rumah}
+                onChange={(e) => setEditForm({ ...editForm, kondisi_rumah: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {KONDISI_OPTIONS.map((k) => (
+                  <option key={k} value={k}>{k || "— Tidak diisi —"}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t border-white/20 dark:border-white/10">

@@ -57,6 +57,7 @@ func (r *WargaRepository) FindAllWithLastPayment(page, limit int) ([]models.Warg
 			w.blok,
 			w.no_telp,
 			w.iuran,
+			COALESCE(w.kondisi_rumah, '') as kondisi_rumah,
 			COALESCE(w.qr_code, '') as qr_code,
 			COALESCE((
 				SELECT MAX(t.tanggal_ipl)
@@ -89,6 +90,7 @@ func (r *WargaRepository) FindByTunggakan(page, limit, bulan int) ([]models.Warg
 				w.blok,
 				w.no_telp,
 				w.iuran,
+				COALESCE(w.kondisi_rumah, '') as kondisi_rumah,
 				COALESCE(w.qr_code, '') as qr_code,
 				COALESCE((
 					SELECT MAX(t.tanggal_ipl)

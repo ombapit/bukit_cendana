@@ -129,6 +129,20 @@ export default function WargaPage() {
         </span>
       ),
     },
+    {
+      key: "kondisi_rumah",
+      header: "Kondisi",
+      render: (w: WargaWithLastPayment) => {
+        const k = w.kondisi_rumah;
+        if (!k) return <span className="text-gray-400 text-xs">-</span>;
+        const colors: Record<string, string> = {
+          "Ditinggali": "bg-green-500/10 text-green-700 dark:text-green-400",
+          "Kosong":     "bg-gray-500/10 text-gray-600 dark:text-gray-400",
+          "Disewakan":  "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+        };
+        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[k] ?? ""}`}>{k}</span>;
+      },
+    },
     { key: "no_telp", header: "No. Telepon" },
     {
       key: "iuran",
@@ -233,7 +247,16 @@ export default function WargaPage() {
                           <p className={s.name}>{w.nama}</p>
                           {w.no_telp && <p className={s.phone}>{w.no_telp}</p>}
                         </div>
-                        <span className={s.blok}>{w.blok}</span>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className={s.blok}>{w.blok}</span>
+                          {w.kondisi_rumah && (
+                            <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                              w.kondisi_rumah === "Ditinggali" ? "bg-green-500/15 text-green-700 dark:text-green-400" :
+                              w.kondisi_rumah === "Kosong" ? "bg-gray-500/15 text-gray-600 dark:text-gray-400" :
+                              "bg-blue-500/15 text-blue-700 dark:text-blue-400"
+                            }`}>{w.kondisi_rumah}</span>
+                          )}
+                        </div>
                       </div>
                       <div className={s.divider}>
                         <div className="min-w-0">

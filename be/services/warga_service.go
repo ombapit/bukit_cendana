@@ -21,10 +21,11 @@ func NewWargaService(wargaRepo *repositories.WargaRepository) *WargaService {
 
 func (s *WargaService) Create(req models.CreateWargaRequest) (*models.WargaResponse, error) {
 	warga := &models.Warga{
-		Nama:   req.Nama,
-		Blok:   req.Blok,
-		NoTelp: req.NoTelp,
-		Iuran:  req.Iuran,
+		Nama:         req.Nama,
+		Blok:         req.Blok,
+		NoTelp:       req.NoTelp,
+		Iuran:        req.Iuran,
+		KondisiRumah: req.KondisiRumah,
 	}
 
 	if err := s.wargaRepo.Create(warga); err != nil {
@@ -124,6 +125,7 @@ func (s *WargaService) Update(id uuid.UUID, req models.UpdateWargaRequest) (*mod
 	if req.Iuran > 0 {
 		warga.Iuran = req.Iuran
 	}
+	warga.KondisiRumah = req.KondisiRumah
 
 	if err := s.wargaRepo.Update(warga); err != nil {
 		return nil, errors.New("failed to update warga")

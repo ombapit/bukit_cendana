@@ -168,6 +168,7 @@ export interface WargaResponse {
   blok: string;
   no_telp?: string;
   iuran: number;
+  kondisi_rumah?: string;
 }
 
 export interface CreateWargaRequest {
@@ -175,6 +176,7 @@ export interface CreateWargaRequest {
   blok: string;
   no_telp?: string;
   iuran: number;
+  kondisi_rumah?: string;
 }
 
 export interface UpdateWargaRequest {
@@ -182,6 +184,7 @@ export interface UpdateWargaRequest {
   blok?: string;
   no_telp?: string;
   iuran?: number;
+  kondisi_rumah?: string;
 }
 
 export interface WargaWithLastPayment {
@@ -190,6 +193,7 @@ export interface WargaWithLastPayment {
   blok: string;
   no_telp?: string;
   iuran: number;
+  kondisi_rumah?: string;
   qr_code?: string;
   last_payment: string;
 }
