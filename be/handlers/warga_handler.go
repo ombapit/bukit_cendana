@@ -103,12 +103,7 @@ func (h *WargaHandler) FindByID(c *gin.Context) {
 // @Failure     401     {object} utils.APIResponse
 // @Router      /warga [post]
 func (h *WargaHandler) Create(c *gin.Context) {
-	var req struct {
-		Nama   string  `json:"nama" binding:"required"`
-		Blok   string  `json:"blok" binding:"required"`
-		NoTelp string  `json:"no_telp"`
-		Iuran  float64 `json:"iuran"`
-	}
+	var req models.CreateWargaRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
@@ -144,12 +139,7 @@ func (h *WargaHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Nama   string  `json:"nama"`
-		Blok   string  `json:"blok"`
-		NoTelp string  `json:"no_telp"`
-		Iuran  float64 `json:"iuran"`
-	}
+	var req models.UpdateWargaRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
