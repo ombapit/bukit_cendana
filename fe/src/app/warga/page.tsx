@@ -101,16 +101,18 @@ export default function WargaPage() {
 
   const allBlocks = [...new Set(warga.map((w) => w.blok.split("/")[0].trim()))].sort();
 
-  const filteredWarga = warga.filter((w) => {
-    const matchSearch =
-      !search ||
-      w.nama.toLowerCase().includes(search.toLowerCase()) ||
-      w.blok.toLowerCase().includes(search.toLowerCase()) ||
-      (w.no_telp || "").includes(search);
-    const matchBlok = !blokFilter || w.blok.startsWith(blokFilter);
-    const matchKondisi = !kondisiFilter || (w.kondisi_rumah || "") === kondisiFilter;
-    return matchSearch && matchBlok && matchKondisi;
-  });
+  const filteredWarga = warga
+    .filter((w) => {
+      const matchSearch =
+        !search ||
+        w.nama.toLowerCase().includes(search.toLowerCase()) ||
+        w.blok.toLowerCase().includes(search.toLowerCase()) ||
+        (w.no_telp || "").includes(search);
+      const matchBlok = !blokFilter || w.blok.startsWith(blokFilter);
+      const matchKondisi = !kondisiFilter || (w.kondisi_rumah || "") === kondisiFilter;
+      return matchSearch && matchBlok && matchKondisi;
+    })
+    .sort((a, b) => a.blok.localeCompare(b.blok, "id", { numeric: true, sensitivity: "base" }));
 
   const columns = [
     {
