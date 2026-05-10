@@ -2,6 +2,7 @@ package services
 
 import (
 	"bytes"
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -66,17 +67,16 @@ func (s *IPaymuService) CreatePayment(referenceID, buyerName, productName string
 
 	va := strings.TrimSpace(s.cfg.VA)
 	apiKey := strings.TrimSpace(s.cfg.APIKey)
-	timestamp := time.Now().Format("20060102150405")
 
-	bodySHA := ipaymuHash(string(bodyBytes))
-	stringToSign := fmt.Sprintf("post:%s:%s:%s", va, bodySHA, apiKey)
-	signature := ipaymuHash(stringToSign)
+	bodyHashArr := sha256.Sum256(bodyBytes)
+	bodySHA := strings.ToLower(hex.EncodeToString(bodyHashArr[:]))
+	stringToSign := "POST:" + va + ":" + bodySHA + ":" + apiKey
 
-	log.Printf("[iPaymu] va='%s' len=%d", va, len(va))
-	log.Printf("[iPaymu] body=%s", string(bodyBytes))
-	log.Printf("[iPaymu] bodySHA=%s", bodySHA)
-	log.Printf("[iPaymu] stringToSign=post:%s:%s:***", va, bodySHA)
-	log.Printf("[iPaymu] signature=%s", signature)
+	h := hmac.New(sha256.New, []byte(apiKey))
+	h.Write([]byte(stringToSign))
+	signature := hex.EncodeToString(h.Sum(nil))
+
+	log.Printf("[iPaymu] bodySHA=%s signature=%s", bodySHA, signature)
 
 	req, err := http.NewRequest("POST", s.cfg.BaseURL+"/api/v2/payment", bytes.NewReader(bodyBytes))
 	if err != nil {
@@ -85,7 +85,6 @@ func (s *IPaymuService) CreatePayment(referenceID, buyerName, productName string
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("va", va)
 	req.Header.Set("signature", signature)
-	req.Header.Set("timestamp", timestamp)
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
@@ -118,8 +117,3 @@ func (s *IPaymuService) CreatePayment(referenceID, buyerName, productName string
 	}, nil
 }
 
-func ipaymuHash(s string) string {
-	h := sha256.New()
-	h.Write([]byte(s))
-	return strings.ToLower(hex.EncodeToString(h.Sum(nil)))
-}

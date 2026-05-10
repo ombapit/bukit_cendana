@@ -54,9 +54,9 @@ func (s *IPLPaymentService) Initiate(req models.InitiateIPLPaymentRequest) (*mod
 	totalAmount := int64(warga.Iuran) * int64(len(months))
 	referenceID := "ipl-" + uuid.New().String()[:8]
 
-	productName := fmt.Sprintf("IPL Bukit Cendana — %s", warga.Nama)
+	productName := fmt.Sprintf("IPL Bukit Cendana - %s", warga.Nama)
 	if len(months) > 1 {
-		productName = fmt.Sprintf("IPL Bukit Cendana — %s (%d bulan)", warga.Nama, len(months))
+		productName = fmt.Sprintf("IPL Bukit Cendana - %s (%d bulan)", warga.Nama, len(months))
 	}
 
 	paymentResult, err := s.ipaymu.CreatePayment(referenceID, warga.Nama, productName, totalAmount)
