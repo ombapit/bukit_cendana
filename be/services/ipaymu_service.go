@@ -65,7 +65,7 @@ func (s *IPaymuService) CreatePayment(referenceID, buyerName, productName string
 	}
 
 	bodySHA := ipaymuHash(string(bodyBytes))
-	signature := ipaymuHash(fmt.Sprintf("POST:%s:%s:%s", s.cfg.VA, bodySHA, s.cfg.APIKey))
+	signature := ipaymuHash(fmt.Sprintf("post:%s:%s:%s", s.cfg.VA, bodySHA, s.cfg.APIKey))
 	timestamp := time.Now().Format("20060102150405")
 
 	req, err := http.NewRequest("POST", s.cfg.BaseURL+"/api/v2/payment", bytes.NewReader(bodyBytes))
