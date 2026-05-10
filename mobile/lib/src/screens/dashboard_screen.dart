@@ -1,6 +1,24 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/pengumuman.dart';
 import '../services/pengumuman_service.dart';
+import '../utils/format.dart';
+import '../widgets/app_chip.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/hero_header.dart';
+import '../widgets/section_header.dart';
+import '../widgets/shell_nav.dart';
+import '../widgets/state_views.dart';
+
+const _kategoris = [
+  ('', 'Semua', Icons.tune_rounded),
+  ('Penting', 'Penting', Icons.priority_high_rounded),
+  ('Umum', 'Umum', Icons.campaign_rounded),
+  ('Keamanan', 'Keamanan', Icons.shield_rounded),
+  ('Kebersihan', 'Kebersihan', Icons.cleaning_services_rounded),
+  ('Kegiatan', 'Kegiatan', Icons.event_rounded),
+  ('Keuangan', 'Keuangan', Icons.account_balance_wallet_rounded),
+];
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -10,384 +28,339 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final PengumumanService _service = PengumumanService();
-  late Future<List<Pengumuman>> _pengumumanFuture;
+  final _service = PengumumanService();
+  final _searchController = TextEditingController();
+  Timer? _debounce;
+
+  bool _loading = true;
+  String? _error;
+  List<Pengumuman> _items = [];
+
   String _selectedKategori = '';
-  String _searchQuery = '';
+  String _search = '';
 
   @override
   void initState() {
     super.initState();
-    _pengumumanFuture = _service.getAll();
+    _fetch();
   }
 
-  void _refresh() {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetch() async {
     setState(() {
-      _pengumumanFuture = _service.getAll(
-        search: _searchQuery,
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list = await _service.getAll(
+        search: _search,
         kategori: _selectedKategori,
       );
-    });
-  }
-
-  String formatTanggal(String isoString) {
-    try {
-      final date = DateTime.parse(isoString);
-      final now = DateTime.now();
-      final diff = now.difference(date);
-
-      if (diff.inDays == 0) {
-        if (diff.inHours == 0) {
-          return '${diff.inMinutes} menit lalu';
-        }
-        return '${diff.inHours} jam lalu';
-      } else if (diff.inDays == 1) {
-        return '1 hari lalu';
-      } else if (diff.inDays < 30) {
-        return '${diff.inDays} hari lalu';
-      } else {
-        return date.toLocal().toString().split(' ')[0];
-      }
+      if (!mounted) return;
+      setState(() {
+        _items = list;
+        _loading = false;
+      });
     } catch (_) {
-      return '-';
+      if (!mounted) return;
+      setState(() {
+        _error = 'Gagal memuat pengumuman';
+        _loading = false;
+      });
     }
   }
 
-  String stripHtml(String html) {
-    return html
-        .replaceAll(RegExp(r'<[^>]+>'), ' ')
-        .replaceAll('&nbsp;', ' ')
-        .replaceAll('&amp;', '&')
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&quot;', '"')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
+  void _onSearchChanged(String v) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      _search = v.trim();
+      _fetch();
+    });
   }
 
-  String getImageUrl(String gambar) {
-    if (gambar.isEmpty) return '';
-    const baseUrl = 'https://bukitcendana.my.id';
-    return '$baseUrl$gambar';
-  }
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now().hour;
+    final greeting = now < 11
+        ? 'Selamat pagi'
+        : now < 15
+            ? 'Selamat siang'
+            : now < 19
+                ? 'Selamat sore'
+                : 'Selamat malam';
 
-  Widget _imagePlaceholder(ColorScheme cs) {
-    return Container(
-      height: 80,
-      color: cs.surfaceContainerHighest,
-      child: Center(
-        child: Icon(Icons.image_rounded, size: 28, color: cs.onSurfaceVariant),
+    return RefreshIndicator(
+      color: Theme.of(context).colorScheme.primary,
+      onRefresh: _fetch,
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 120),
+        children: [
+          HeroHeader(
+            subtitle: greeting,
+            title: 'Bukit Cendana',
+            height: 220,
+            actions: [
+              HeroQuickAction(
+                icon: Icons.people_rounded,
+                label: 'Warga',
+                onTap: () => ShellNav.instance.go(ShellNav.warga),
+              ),
+              HeroQuickAction(
+                icon: Icons.receipt_long_rounded,
+                label: 'Laporan',
+                onTap: () => ShellNav.instance.go(ShellNav.laporan),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              decoration: InputDecoration(
+                hintText: 'Cari pengumuman...',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _search.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          _search = '';
+                          _fetch();
+                        },
+                      ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: _kategoris.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              itemBuilder: (_, i) {
+                final (value, label, icon) = _kategoris[i];
+                return AppFilterChip(
+                  label: label,
+                  icon: icon,
+                  selected: _selectedKategori == value,
+                  onTap: () {
+                    setState(() => _selectedKategori = value);
+                    _fetch();
+                  },
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          SectionHeader(
+            title: _selectedKategori.isEmpty ? 'Pengumuman Terbaru' : _selectedKategori,
+          ),
+          const SizedBox(height: 8),
+
+          if (_loading)
+            const LoadingView()
+          else if (_error != null)
+            ErrorView(message: _error!, onRetry: _fetch)
+          else if (_items.isEmpty)
+            const EmptyView(
+              icon: Icons.campaign_rounded,
+              title: 'Belum ada pengumuman',
+              subtitle: 'Pengumuman baru akan muncul di sini.',
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  _PengumumanFeatured(item: _items.first),
+                  if (_items.length > 1) ...[
+                    const SizedBox(height: 16),
+                    for (var i = 1; i < _items.length; i++) ...[
+                      _PengumumanRow(item: _items[i]),
+                      if (i < _items.length - 1) const SizedBox(height: 10),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
+}
 
-  Widget _kategoriChip(String label, ColorScheme cs, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: cs.tertiaryContainer,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: cs.onTertiaryContainer,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+class _PengumumanFeatured extends StatelessWidget {
+  final Pengumuman item;
+  const _PengumumanFeatured({required this.item});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Bukit Cendana'), actions: []),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [cs.primary, cs.primary.withValues(alpha: 0.8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Icon(Icons.home_rounded, color: cs.onPrimary, size: 40),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Bukit Cendana',
-                      style: TextStyle(
-                        color: cs.onPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Perumahan Bukit Cendana',
-                      style: TextStyle(
-                        color: cs.onPrimary.withValues(alpha: 0.8),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home_rounded),
-              title: const Text('Home'),
-              selected: true,
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.description_rounded),
-              title: const Text('Laporan'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/laporan');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.people_rounded),
-              title: const Text('Warga'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/warga');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.admin_panel_settings_rounded),
-              title: const Text('Admin'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/admin');
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.login_rounded),
-              title: const Text('Login'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/login');
-              },
-            ),
-          ],
-        ),
-      ),
-      body: ListView(
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      onTap: () => Navigator.pushNamed(context, '/pengumuman_detail', arguments: item),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: item.gambar.isNotEmpty
+                ? Image.network(
+                    absoluteImageUrl(item.gambar),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _placeholder(cs),
+                  )
+                : _placeholder(cs),
+          ),
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  onChanged: (value) {
-                    _searchQuery = value;
-                    _refresh();
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Cari pengumuman...',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedKategori,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.filter_list_rounded),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: '', child: Text('Semua Kategori')),
-                    DropdownMenuItem(value: 'Umum', child: Text('Umum')),
-                    DropdownMenuItem(
-                      value: 'Keamanan',
-                      child: Text('Keamanan'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Kebersihan',
-                      child: Text('Kebersihan'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Kegiatan',
-                      child: Text('Kegiatan'),
-                    ),
-                    DropdownMenuItem(value: 'Penting', child: Text('Penting')),
-                    DropdownMenuItem(
-                      value: 'Keuangan',
-                      child: Text('Keuangan'),
+                Row(
+                  children: [
+                    if (item.kategori.isNotEmpty)
+                      StatusBadge(
+                        label: item.kategori,
+                        background: cs.primary.withValues(alpha: 0.12),
+                        foreground: cs.primary,
+                      ),
+                    const Spacer(),
+                    Icon(Icons.schedule_rounded, size: 12, color: cs.onSurfaceVariant),
+                    const SizedBox(width: 4),
+                    Text(
+                      formatRelative(item.createdAt),
+                      style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                     ),
                   ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedKategori = value ?? '';
-                    });
-                    _refresh();
-                  },
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  item.judul,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  stripHtml(item.konten),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                 ),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: FutureBuilder<List<Pengumuman>>(
-              future: _pengumumanFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SizedBox(
-                    height: 200,
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
+        ],
+      ),
+    );
+  }
 
-                if (snapshot.hasError) {
-                  final cs = Theme.of(context).colorScheme;
-                  return SizedBox(
-                    height: 100,
-                    child: Center(
-                      child: Text(
-                        'Error: ${snapshot.error}',
-                        style: TextStyle(color: cs.error),
+  Widget _placeholder(ColorScheme cs) {
+    return Container(
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+      child: Center(
+        child: Icon(Icons.image_rounded, size: 40, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+      ),
+    );
+  }
+}
+
+class _PengumumanRow extends StatelessWidget {
+  final Pengumuman item;
+  const _PengumumanRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return GlassCard(
+      padding: const EdgeInsets.all(10),
+      onTap: () => Navigator.pushNamed(context, '/pengumuman_detail', arguments: item),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 80,
+              height: 80,
+              child: item.gambar.isNotEmpty
+                  ? Image.network(
+                      absoluteImageUrl(item.gambar),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _placeholder(cs),
+                    )
+                  : _placeholder(cs),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (item.kategori.isNotEmpty) ...[
+                  StatusBadge(
+                    label: item.kategori,
+                    background: cs.primary.withValues(alpha: 0.1),
+                    foreground: cs.primary,
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                Text(
+                  item.judul,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.schedule_rounded, size: 11, color: cs.onSurfaceVariant),
+                    const SizedBox(width: 3),
+                    Text(
+                      formatRelative(item.createdAt),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontSize: 11,
                       ),
                     ),
-                  );
-                }
-
-                final pengumumans = snapshot.data ?? [];
-
-                if (pengumumans.isEmpty) {
-                  final cs = Theme.of(context).colorScheme;
-                  return SizedBox(
-                    height: 100,
-                    child: Center(
-                      child: Text(
-                        'Belum ada pengumuman',
-                        style: TextStyle(color: cs.onSurfaceVariant),
-                      ),
-                    ),
-                  );
-                }
-
-                return GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.75,
-                  children: pengumumans.map((p) {
-                    return Card(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/pengumuman_detail',
-                            arguments: p,
-                          );
-                        },
-                        child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(16),
-                            ),
-                            child: p.gambar.isNotEmpty
-                                ? Image.network(
-                                    getImageUrl(p.gambar),
-                                    height: 80,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, _, _) =>
-                                        _imagePlaceholder(cs),
-                                  )
-                                : _imagePlaceholder(cs),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (p.kategori.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 6),
-                                      child: _kategoriChip(
-                                        p.kategori,
-                                        cs,
-                                        theme,
-                                      ),
-                                    ),
-                                  Flexible(
-                                    child: Text(
-                                      p.judul,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.labelLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Flexible(
-                                    child: Text(
-                                      stripHtml(p.konten),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: cs.onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.schedule_rounded,
-                                        size: 10,
-                                        color: cs.onSurfaceVariant,
-                                      ),
-                                      const SizedBox(width: 3),
-                                      Text(
-                                        formatTanggal(p.createdAt),
-                                        style: theme.textTheme.labelSmall
-                                            ?.copyWith(
-                                              color: cs.onSurfaceVariant,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                  }).toList(),
-                );
-              },
+                  ],
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _placeholder(ColorScheme cs) {
+    return Container(
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+      child: Center(
+        child: Icon(Icons.image_rounded, size: 24, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
       ),
     );
   }

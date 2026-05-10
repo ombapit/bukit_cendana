@@ -1,47 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/warga.dart';
 import '../services/warga_service.dart';
-
-const _bulanIndonesia = {
-  '01': 'Januari',
-  '02': 'Februari',
-  '03': 'Maret',
-  '04': 'April',
-  '05': 'Mei',
-  '06': 'Juni',
-  '07': 'Juli',
-  '08': 'Agustus',
-  '09': 'September',
-  '10': 'Oktober',
-  '11': 'November',
-  '12': 'Desember',
-};
-
-String _formatTanggalIPL(String tanggal) {
-  if (tanggal.length != 6) return '-';
-  final tahun = tanggal.substring(0, 4);
-  final bulan = tanggal.substring(4, 6);
-  return '${_bulanIndonesia[bulan] ?? bulan} $tahun';
-}
-
-int _monthsSince(String yyyymm) {
-  if (yyyymm.length != 6) return 999;
-  final year = int.parse(yyyymm.substring(0, 4));
-  final month = int.parse(yyyymm.substring(4, 6));
-  final now = DateTime.now();
-  return (now.year - year) * 12 + (now.month - month);
-}
-
-String _formatRupiah(int amount) {
-  if (amount <= 0) return '-';
-  final s = amount.toString();
-  final result = StringBuffer();
-  for (var i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 == 0) result.write('.');
-    result.write(s[i]);
-  }
-  return 'Rp $result';
-}
+import '../utils/format.dart';
+import '../widgets/app_chip.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/state_views.dart';
 
 class WargaScreen extends StatefulWidget {
   const WargaScreen({super.key});
@@ -51,14 +14,17 @@ class WargaScreen extends StatefulWidget {
 }
 
 class _WargaScreenState extends State<WargaScreen> {
-  final WargaService _service = WargaService();
+  final _service = WargaService();
+  final _searchController = TextEditingController();
+
   List<WargaWithLastPayment> _warga = [];
   bool _loading = true;
+  String? _error;
 
   String _search = '';
   String _blokFilter = '';
-  String _tunggakanFilter = '';
   String _kondisiFilter = '';
+  int? _tunggakan; // null = semua, 2/3/4 = threshold
 
   @override
   void initState() {
@@ -66,14 +32,31 @@ class _WargaScreenState extends State<WargaScreen> {
     _fetch();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetch() async {
-    setState(() => _loading = true);
-    final data = await _service.getAll(
-      tunggakan: _tunggakanFilter.isNotEmpty
-          ? int.tryParse(_tunggakanFilter)
-          : null,
-    );
-    if (mounted) setState(() { _warga = data; _loading = false; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final data = await _service.getAll(tunggakan: _tunggakan);
+      if (!mounted) return;
+      setState(() {
+        _warga = data;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Gagal memuat data warga';
+        _loading = false;
+      });
+    }
   }
 
   List<String> get _allBlocks {
@@ -82,23 +65,45 @@ class _WargaScreenState extends State<WargaScreen> {
       final prefix = w.blok.split('/')[0].trim();
       if (prefix.isNotEmpty) blocks.add(prefix);
     }
-    final list = blocks.toList();
-    list.sort();
+    final list = blocks.toList()
+      ..sort((a, b) => a.compareTo(b));
     return list;
   }
 
   List<WargaWithLastPayment> get _filtered {
-    return _warga.where((w) {
-      final matchSearch = _search.isEmpty ||
-          w.nama.toLowerCase().contains(_search.toLowerCase()) ||
-          w.blok.toLowerCase().contains(_search.toLowerCase()) ||
-          w.noTelp.contains(_search);
-      final matchBlok =
-          _blokFilter.isEmpty || w.blok.startsWith(_blokFilter);
-      final matchKondisi = _kondisiFilter.isEmpty ||
-          w.kondisiRumah == _kondisiFilter;
+    final list = _warga.where((w) {
+      final s = _search.toLowerCase();
+      final matchSearch = s.isEmpty ||
+          w.nama.toLowerCase().contains(s) ||
+          w.blok.toLowerCase().contains(s) ||
+          w.noTelp.contains(s);
+      final matchBlok = _blokFilter.isEmpty || w.blok.startsWith(_blokFilter);
+      final matchKondisi = _kondisiFilter.isEmpty || w.kondisiRumah == _kondisiFilter;
       return matchSearch && matchBlok && matchKondisi;
     }).toList();
+    list.sort((a, b) => _compareBlok(a.blok, b.blok));
+    return list;
+  }
+
+  /// Numeric-aware blok compare so "A2" < "A10".
+  int _compareBlok(String a, String b) {
+    final ra = RegExp(r'(\D+|\d+)').allMatches(a).map((m) => m.group(0)!).toList();
+    final rb = RegExp(r'(\D+|\d+)').allMatches(b).map((m) => m.group(0)!).toList();
+    final n = ra.length < rb.length ? ra.length : rb.length;
+    for (var i = 0; i < n; i++) {
+      final pa = ra[i];
+      final pb = rb[i];
+      final na = int.tryParse(pa);
+      final nb = int.tryParse(pb);
+      int cmp;
+      if (na != null && nb != null) {
+        cmp = na.compareTo(nb);
+      } else {
+        cmp = pa.toLowerCase().compareTo(pb.toLowerCase());
+      }
+      if (cmp != 0) return cmp;
+    }
+    return ra.length.compareTo(rb.length);
   }
 
   @override
@@ -107,156 +112,223 @@ class _WargaScreenState extends State<WargaScreen> {
     final cs = theme.colorScheme;
     final filtered = _filtered;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Data Warga')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
+    return SafeArea(
+      bottom: false,
+      child: RefreshIndicator(
+        color: cs.primary,
+        onRefresh: _fetch,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+          children: [
+            Text('Data Warga', style: theme.textTheme.headlineMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Daftar penghuni resmi Bukit Cendana beserta status IPL.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 14),
+
+            // Legend
+            Wrap(
+              spacing: 14,
+              runSpacing: 6,
+              children: const [
+                _LegendDot(color: Color(0xFFEF4444), label: 'Tunggakan > 3 bln'),
+                _LegendDot(color: Color(0xFFF59E0B), label: 'Tunggakan > 2 bln'),
+                _LegendDot(color: Colors.transparent, label: 'Lancar', outlined: true),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            TextField(
+              controller: _searchController,
+              onChanged: (v) => setState(() => _search = v),
+              decoration: InputDecoration(
+                hintText: 'Cari nama, blok, atau no. telepon...',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _search.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _search = '');
+                        },
+                      ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Tunggakan chips
+            _ChipRow(
+              label: 'Pembayaran',
               children: [
-                Text(
-                  'Daftar penghuni resmi Perumahan Bukit Cendana beserta status pembayaran IPL terakhir.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
+                AppFilterChip(
+                  label: 'Semua',
+                  selected: _tunggakan == null,
+                  onTap: () { setState(() => _tunggakan = null); _fetch(); },
                 ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 6,
-                  children: [
-                    _legendDot(cs.error, 'Tunggakan > 3 bln'),
-                    _legendDot(Colors.amber.shade700, 'Tunggakan > 2 bln'),
-                    _legendDot(cs.outlineVariant, 'Lancar'),
-                  ],
+                AppFilterChip(
+                  label: '> 2 bln',
+                  selected: _tunggakan == 2,
+                  onTap: () { setState(() => _tunggakan = 2); _fetch(); },
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  onChanged: (v) => setState(() => _search = v),
-                  decoration: const InputDecoration(
-                    hintText: 'Cari nama, blok, atau no. telepon...',
-                    prefixIcon: Icon(Icons.search_rounded),
-                  ),
+                AppFilterChip(
+                  label: '> 3 bln',
+                  selected: _tunggakan == 3,
+                  onTap: () { setState(() => _tunggakan = 3); _fetch(); },
                 ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _blokFilter,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.location_on_rounded),
-                    isDense: true,
-                  ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: '',
-                      child: Text('Semua Blok'),
-                    ),
-                    ..._allBlocks.map(
-                      (b) => DropdownMenuItem(
-                        value: b,
-                        child: Text(b),
-                      ),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    setState(() => _blokFilter = v ?? '');
-                    _fetch();
-                  },
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: _tunggakanFilter,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.payments_rounded),
-                    isDense: true,
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: '',
-                      child: Text('Semua Pembayaran'),
-                    ),
-                    DropdownMenuItem(
-                      value: '2',
-                      child: Text('Tunggakan > 2 bln'),
-                    ),
-                    DropdownMenuItem(
-                      value: '3',
-                      child: Text('Tunggakan > 3 bln'),
-                    ),
-                    DropdownMenuItem(
-                      value: '4',
-                      child: Text('Tunggakan 4+ bln'),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    setState(() => _tunggakanFilter = v ?? '');
-                    _fetch();
-                  },
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: _kondisiFilter,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.home_rounded),
-                    isDense: true,
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: '',
-                      child: Text('Semua Kondisi'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Ditinggali',
-                      child: Text('Ditinggali'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Kosong',
-                      child: Text('Kosong'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Disewakan',
-                      child: Text('Disewakan'),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    setState(() => _kondisiFilter = v ?? '');
-                  },
-                ),
-                const SizedBox(height: 16),
-                if (filtered.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 48),
-                    child: Center(
-                      child: Text(
-                        'Tidak ada data',
-                        style: TextStyle(color: cs.onSurfaceVariant),
-                      ),
-                    ),
-                  )
-                else
-                  ...filtered.map((w) => _WargaCard(w: w, cs: cs, theme: theme)),
-                const SizedBox(height: 8),
-                Text(
-                  'Menampilkan ${filtered.length} dari ${_warga.length} warga',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
+                AppFilterChip(
+                  label: '4+ bln',
+                  selected: _tunggakan == 4,
+                  onTap: () { setState(() => _tunggakan = 4); _fetch(); },
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+
+            // Kondisi chips
+            _ChipRow(
+              label: 'Kondisi',
+              children: [
+                AppFilterChip(
+                  label: 'Semua',
+                  selected: _kondisiFilter.isEmpty,
+                  onTap: () => setState(() => _kondisiFilter = ''),
+                ),
+                AppFilterChip(
+                  label: 'Ditinggali',
+                  selected: _kondisiFilter == 'Ditinggali',
+                  onTap: () => setState(() => _kondisiFilter = 'Ditinggali'),
+                ),
+                AppFilterChip(
+                  label: 'Kosong',
+                  selected: _kondisiFilter == 'Kosong',
+                  onTap: () => setState(() => _kondisiFilter = 'Kosong'),
+                ),
+                AppFilterChip(
+                  label: 'Disewakan',
+                  selected: _kondisiFilter == 'Disewakan',
+                  onTap: () => setState(() => _kondisiFilter = 'Disewakan'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Blok chips (only show if there are blocks)
+            if (_allBlocks.isNotEmpty)
+              _ChipRow(
+                label: 'Blok',
+                children: [
+                  AppFilterChip(
+                    label: 'Semua',
+                    selected: _blokFilter.isEmpty,
+                    onTap: () => setState(() => _blokFilter = ''),
+                  ),
+                  for (final b in _allBlocks)
+                    AppFilterChip(
+                      label: b,
+                      selected: _blokFilter == b,
+                      onTap: () => setState(() => _blokFilter = b),
+                    ),
+                ],
+              ),
+
+            const SizedBox(height: 16),
+
+            if (_loading)
+              const LoadingView(label: 'Memuat data warga...')
+            else if (_error != null)
+              ErrorView(message: _error!, onRetry: _fetch)
+            else if (filtered.isEmpty)
+              const EmptyView(
+                icon: Icons.people_outline_rounded,
+                title: 'Tidak ada warga',
+                subtitle: 'Coba ubah pencarian atau filter di atas.',
+              )
+            else ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8, left: 4),
+                child: Text(
+                  'Menampilkan ${filtered.length} dari ${_warga.length} warga',
+                  style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ),
+              for (final w in filtered) ...[
+                _WargaCard(w: w),
+                const SizedBox(height: 10),
+              ],
+            ],
+          ],
+        ),
+      ),
     );
   }
+}
 
-  Widget _legendDot(Color color, String label) {
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+  final bool outlined;
+  const _LegendDot({required this.color, required this.label, this.outlined = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: outlined ? Border.all(color: cs.outlineVariant, width: 1.5) : null,
+          ),
         ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11)),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChipRow extends StatelessWidget {
+  final String label;
+  final List<Widget> children;
+  const _ChipRow({required this.label, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 4),
+          child: Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              letterSpacing: 1,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemBuilder: (_, i) => children[i],
+            separatorBuilder: (_, _) => const SizedBox(width: 6),
+            itemCount: children.length,
+          ),
+        ),
       ],
     );
   }
@@ -264,55 +336,53 @@ class _WargaScreenState extends State<WargaScreen> {
 
 class _WargaCard extends StatelessWidget {
   final WargaWithLastPayment w;
-  final ColorScheme cs;
-  final ThemeData theme;
+  const _WargaCard({required this.w});
 
-  const _WargaCard({
-    required this.w,
-    required this.cs,
-    required this.theme,
-  });
+  ({Color bg, Color border, Color accent, Color text, Color muted}) _palette(
+    BuildContext context,
+  ) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final late = monthsSince(w.lastPayment);
+
+    if (late > 3) {
+      // Red
+      return (
+        bg: isDark ? const Color(0xFF3F1212) : const Color(0xFFFEE2E2),
+        border: const Color(0xFFEF4444).withValues(alpha: 0.4),
+        accent: const Color(0xFFEF4444),
+        text: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF7F1D1D),
+        muted: isDark ? const Color(0xFFF87171) : const Color(0xFFB91C1C),
+      );
+    }
+    if (late > 2) {
+      // Amber
+      return (
+        bg: isDark ? const Color(0xFF3A2914) : const Color(0xFFFEF3C7),
+        border: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+        accent: const Color(0xFFF59E0B),
+        text: isDark ? const Color(0xFFFCD34D) : const Color(0xFF78350F),
+        muted: isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309),
+      );
+    }
+    return (
+      bg: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white.withValues(alpha: 0.55),
+      border: isDark ? Colors.white.withValues(alpha: 0.07) : Colors.white.withValues(alpha: 0.7),
+      accent: cs.primary,
+      text: cs.onSurface,
+      muted: cs.onSurfaceVariant,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final late = _monthsSince(w.lastPayment);
-    final isRed = late > 3;
-    final isAmber = late > 2;
+    final theme = Theme.of(context);
+    final p = _palette(context);
 
-    final Color bgColor;
-    final Color borderColor;
-    final Color textColor;
-    final Color mutedColor;
-    final Color labelColor;
-
-    if (isRed) {
-      bgColor = cs.errorContainer;
-      borderColor = cs.error.withValues(alpha: 0.4);
-      textColor = cs.onErrorContainer;
-      mutedColor = cs.onErrorContainer.withValues(alpha: 0.7);
-      labelColor = cs.error;
-    } else if (isAmber) {
-      bgColor = Colors.amber.shade100;
-      borderColor = Colors.amber.shade400;
-      textColor = Colors.amber.shade900;
-      mutedColor = Colors.amber.shade700;
-      labelColor = Colors.amber.shade800;
-    } else {
-      bgColor = cs.surfaceContainerLow;
-      borderColor = cs.outlineVariant;
-      textColor = cs.onSurface;
-      mutedColor = cs.onSurfaceVariant;
-      labelColor = cs.onSurfaceVariant;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+    return GlassCard(
+      color: p.bg,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -326,108 +396,53 @@ class _WargaCard extends StatelessWidget {
                     Text(
                       w.nama,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: textColor,
+                        fontWeight: FontWeight.w700,
+                        color: p.text,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (w.noTelp.isNotEmpty)
+                    if (w.noTelp.isNotEmpty) ...[
+                      const SizedBox(height: 2),
                       Text(
                         w.noTelp,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: mutedColor,
-                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(color: p.muted),
                       ),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isRed
-                          ? cs.error.withValues(alpha: 0.2)
-                          : isAmber
-                              ? Colors.amber.shade300
-                              : cs.primaryContainer,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      w.blok,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isRed
-                            ? cs.onErrorContainer
-                            : isAmber
-                                ? Colors.amber.shade900
-                                : cs.onPrimaryContainer,
-                      ),
-                    ),
+                  StatusBadge(
+                    label: w.blok,
+                    background: p.accent.withValues(alpha: 0.18),
+                    foreground: p.accent,
                   ),
                   if (w.kondisiRumah.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    _kondisiBadge(w.kondisiRumah, theme),
+                    _kondisiBadge(w.kondisiRumah),
                   ],
                 ],
               ),
             ],
           ),
-          const Divider(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Container(
+              height: 1,
+              color: p.border,
+            ),
+          ),
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'IURAN/BULAN',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: labelColor,
-                        fontSize: 10,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatRupiah(w.iuran),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: textColor,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+                child: _stat('Iuran/Bulan', formatRupiah(w.iuran), p.muted, p.text),
               ),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'BAYAR TERAKHIR',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: labelColor,
-                        fontSize: 10,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatTanggalIPL(w.lastPayment),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: textColor,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+                child: _stat('Bayar Terakhir', formatTanggalIPL(w.lastPayment), p.muted, p.text),
               ),
             ],
           ),
@@ -436,34 +451,47 @@ class _WargaCard extends StatelessWidget {
     );
   }
 
-  Widget _kondisiBadge(String kondisi, ThemeData theme) {
-    Color bg;
-    Color fg;
+  Widget _stat(String label, String value, Color labelColor, Color valueColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 10,
+            letterSpacing: 0.6,
+            color: labelColor,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            color: valueColor,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+
+  Widget _kondisiBadge(String kondisi) {
+    Color bg, fg;
     switch (kondisi) {
       case 'Ditinggali':
-        bg = Colors.green.shade100;
-        fg = Colors.green.shade800;
+        bg = const Color(0xFF22C55E).withValues(alpha: 0.15);
+        fg = const Color(0xFF15803D);
       case 'Kosong':
-        bg = Colors.grey.shade200;
-        fg = Colors.grey.shade700;
+        bg = const Color(0xFF6B7280).withValues(alpha: 0.18);
+        fg = const Color(0xFF374151);
       default:
-        bg = Colors.blue.shade100;
-        fg = Colors.blue.shade800;
+        bg = const Color(0xFF3B82F6).withValues(alpha: 0.15);
+        fg = const Color(0xFF1D4ED8);
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        kondisi,
-        style: theme.textTheme.labelSmall?.copyWith(
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
-          color: fg,
-        ),
-      ),
-    );
+    return StatusBadge(label: kondisi, background: bg, foreground: fg);
   }
 }
