@@ -50,6 +50,19 @@ function inputMonthToYYYYMM(val: string): string {
   return val.replace("-", "");
 }
 
+// Returns number of months in range [start, end] (both YYYY-MM). Returns 1 if end is empty/invalid.
+function bulanDalamRange(start: string, end: string): number {
+  if (!start) return 0;
+  if (!end || end < start) return 1;
+  const [sy, sm] = start.split("-").map(Number);
+  const [ey, em] = end.split("-").map(Number);
+  return (ey - sy) * 12 + (em - sm) + 1;
+}
+
+function formatRupiah(n: number): string {
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+}
+
 function getImageURL(gambar: string): string {
   if (!gambar) return "";
   const base = (process.env.NEXT_PUBLIC_API_URL ?? "").replace("/api/v1", "");
@@ -75,7 +88,7 @@ export default function IPLListPage() {
 
   // Create modal
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState({ warga_id: "", tanggal_ipl: "", created_at: "", gambar: null as File | null });
+  const [createForm, setCreateForm] = useState({ warga_id: "", tanggal_ipl_start: "", tanggal_ipl_end: "", created_at: "", gambar: null as File | null });
   const [creating, setCreating] = useState(false);
   const createFileRef = useRef<HTMLInputElement>(null);
 
@@ -191,7 +204,7 @@ export default function IPLListPage() {
   };
 
   const openCreate = () => {
-    setCreateForm({ warga_id: "", tanggal_ipl: "", created_at: todayStr(), gambar: null });
+    setCreateForm({ warga_id: "", tanggal_ipl_start: "", tanggal_ipl_end: "", created_at: todayStr(), gambar: null });
     setWargaSearch("");
     setWargaDropdownOpen(false);
     if (createFileRef.current) createFileRef.current.value = "";
@@ -199,7 +212,7 @@ export default function IPLListPage() {
   };
 
   const handleCreate = async () => {
-    if (!createForm.warga_id || !createForm.tanggal_ipl) {
+    if (!createForm.warga_id || !createForm.tanggal_ipl_start) {
       showError("Warga dan periode IPL wajib diisi");
       return;
     }
@@ -207,12 +220,16 @@ export default function IPLListPage() {
     try {
       const fd = new FormData();
       fd.append("warga_id", createForm.warga_id);
-      fd.append("tanggal_ipl", inputMonthToYYYYMM(createForm.tanggal_ipl));
+      fd.append("tanggal_ipl", inputMonthToYYYYMM(createForm.tanggal_ipl_start));
+      if (createForm.tanggal_ipl_end && createForm.tanggal_ipl_end >= createForm.tanggal_ipl_start) {
+        fd.append("tanggal_ipl_end", inputMonthToYYYYMM(createForm.tanggal_ipl_end));
+      }
       if (createForm.created_at) fd.append("created_at", createForm.created_at);
       if (createForm.gambar) fd.append("gambar", createForm.gambar);
       await iplService.create(fd);
       setCreateOpen(false);
-      showSuccess("Pembayaran IPL berhasil ditambahkan");
+      const jumlah = bulanDalamRange(createForm.tanggal_ipl_start, createForm.tanggal_ipl_end);
+      showSuccess(`Pembayaran IPL berhasil ditambahkan (${jumlah} bulan)`);
       fetchIPLs();
     } catch {
       showError("Gagal menambahkan pembayaran IPL");
@@ -547,12 +564,44 @@ export default function IPLListPage() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Periode IPL <span className="text-red-500">*</span>
             </label>
-            <input
-              type="month"
-              value={createForm.tanggal_ipl}
-              onChange={(e) => setCreateForm({ ...createForm, tanggal_ipl: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Dari bulan</p>
+                <input
+                  type="month"
+                  value={createForm.tanggal_ipl_start}
+                  onChange={(e) => setCreateForm({ ...createForm, tanggal_ipl_start: e.target.value })}
+                  className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Sampai bulan</p>
+                <input
+                  type="month"
+                  value={createForm.tanggal_ipl_end}
+                  min={createForm.tanggal_ipl_start}
+                  onChange={(e) => setCreateForm({ ...createForm, tanggal_ipl_end: e.target.value })}
+                  className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            {createForm.tanggal_ipl_start && (() => {
+              const jumlah = bulanDalamRange(createForm.tanggal_ipl_start, createForm.tanggal_ipl_end);
+              const selectedWarga = wargas.find((w) => w.id === createForm.warga_id);
+              const total = selectedWarga ? selectedWarga.iuran * jumlah : null;
+              return (
+                <div className="mt-2 flex items-center gap-3 text-xs">
+                  <span className="px-2 py-1 rounded-md bg-red-700/10 text-red-700 dark:bg-red-700/20 dark:text-red-400 font-medium">
+                    {jumlah} bulan
+                  </span>
+                  {total !== null && (
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Total: <span className="font-semibold text-gray-900 dark:text-white">{formatRupiah(total)}</span>
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Tanggal Input */}

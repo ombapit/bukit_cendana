@@ -110,9 +110,10 @@ func (h *IPLHandler) Create(c *gin.Context) {
 	gambarPath := saveUploadedFile(c, "gambar")
 
 	req := models.CreateIPLRequest{
-		WargaID:    wargaID,
-		TanggalIPL: tanggalIPL,
-		Gambar:     gambarPath,
+		WargaID:       wargaID,
+		TanggalIPL:    tanggalIPL,
+		TanggalIPLEnd: c.PostForm("tanggal_ipl_end"),
+		Gambar:        gambarPath,
 	}
 	if createdAtStr := c.PostForm("created_at"); createdAtStr != "" {
 		if t, err := time.Parse("2006-01-02", createdAtStr); err == nil {
@@ -120,13 +121,13 @@ func (h *IPLHandler) Create(c *gin.Context) {
 		}
 	}
 
-	ipl, err := h.iplService.Create(req)
+	ipls, err := h.iplService.Create(req)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	utils.CreatedResponse(c, "IPL created successfully", ipl)
+	utils.CreatedResponse(c, "IPL created successfully", ipls)
 }
 
 // Update godoc

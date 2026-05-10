@@ -49,10 +49,11 @@ func (t *IPL) ToResponse() IPLResponse {
 }
 
 type CreateIPLRequest struct {
-	WargaID    uuid.UUID `json:"warga_id"`
-	TanggalIPL string    `json:"tanggal_ipl"`
-	Gambar     string    `json:"gambar"`
-	CreatedAt  time.Time `json:"created_at"`
+	WargaID       uuid.UUID `json:"warga_id"`
+	TanggalIPL    string    `json:"tanggal_ipl"`
+	TanggalIPLEnd string    `json:"tanggal_ipl_end"`
+	Gambar        string    `json:"gambar"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 type UpdateIPLRequest struct {
