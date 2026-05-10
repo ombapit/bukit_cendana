@@ -64,16 +64,26 @@ func (s *IPaymuService) CreatePayment(referenceID, buyerName, productName string
 		return nil, err
 	}
 
-	bodySHA := ipaymuHash(string(bodyBytes))
-	signature := ipaymuHash(fmt.Sprintf("post:%s:%s:%s", s.cfg.VA, bodySHA, s.cfg.APIKey))
+	va := strings.TrimSpace(s.cfg.VA)
+	apiKey := strings.TrimSpace(s.cfg.APIKey)
 	timestamp := time.Now().Format("20060102150405")
+
+	bodySHA := ipaymuHash(string(bodyBytes))
+	stringToSign := fmt.Sprintf("post:%s:%s:%s", va, bodySHA, apiKey)
+	signature := ipaymuHash(stringToSign)
+
+	log.Printf("[iPaymu] va='%s' len=%d", va, len(va))
+	log.Printf("[iPaymu] body=%s", string(bodyBytes))
+	log.Printf("[iPaymu] bodySHA=%s", bodySHA)
+	log.Printf("[iPaymu] stringToSign=post:%s:%s:***", va, bodySHA)
+	log.Printf("[iPaymu] signature=%s", signature)
 
 	req, err := http.NewRequest("POST", s.cfg.BaseURL+"/api/v2/payment", bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("va", s.cfg.VA)
+	req.Header.Set("va", va)
 	req.Header.Set("signature", signature)
 	req.Header.Set("timestamp", timestamp)
 
