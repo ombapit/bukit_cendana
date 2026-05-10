@@ -5,8 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -28,6 +30,13 @@ type IPaymuPaymentResult struct {
 }
 
 func (s *IPaymuService) CreatePayment(referenceID, buyerName, productName string, amount int64) (*IPaymuPaymentResult, error) {
+	if s.cfg.VA == "" || s.cfg.APIKey == "" {
+		return nil, errors.New("konfigurasi iPaymu belum lengkap (IPAYMU_VA dan IPAYMU_API_KEY wajib diisi di .env)")
+	}
+	if s.cfg.NotifyURL == "" || s.cfg.ReturnURL == "" || s.cfg.CancelURL == "" {
+		return nil, errors.New("konfigurasi iPaymu belum lengkap (IPAYMU_NOTIFY_URL, IPAYMU_RETURN_URL, IPAYMU_CANCEL_URL wajib diisi di .env)")
+	}
+
 	type reqBody struct {
 		Product     []string `json:"product"`
 		Qty         []int    `json:"qty"`
@@ -76,6 +85,7 @@ func (s *IPaymuService) CreatePayment(referenceID, buyerName, productName string
 	defer resp.Body.Close()
 
 	respBytes, _ := io.ReadAll(resp.Body)
+	log.Printf("[iPaymu] status=%d body=%s", resp.StatusCode, string(respBytes))
 
 	var result struct {
 		Status  int    `json:"Status"`
