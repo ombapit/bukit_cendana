@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'models/pengumuman.dart';
+import 'screens/ipl_payment_screen.dart';
 import 'screens/pengumuman_detail_screen.dart';
 import 'screens/splash_screen.dart';
 import 'widgets/app_shell.dart';
@@ -9,6 +10,11 @@ class AppRouter {
     switch (settings.name) {
       case '/shell':
         return MaterialPageRoute(builder: (_) => const AppShell());
+      case '/ipl_payment':
+        return MaterialPageRoute(
+          builder: (_) => const IPLPaymentScreen(),
+          fullscreenDialog: true,
+        );
       case '/pengumuman_detail':
         final args = settings.arguments as Pengumuman;
         return MaterialPageRoute(builder: (_) => PengumumanDetailScreen(data: args));

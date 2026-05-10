@@ -116,6 +116,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 label: 'Laporan',
                 onTap: () => ShellNav.instance.go(ShellNav.laporan),
               ),
+              HeroQuickAction(
+                icon: Icons.payment_rounded,
+                label: 'Bayar IPL',
+                onTap: () => Navigator.of(context).pushNamed('/ipl_payment'),
+              ),
             ],
           ),
           const SizedBox(height: 16),

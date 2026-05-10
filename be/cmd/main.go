@@ -47,6 +47,7 @@ func main() {
 		&models.Finance{},
 		&models.Pengumuman{},
 		&models.ActivityLog{},
+		&models.IPLPaymentReq{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -64,6 +65,7 @@ func main() {
 	menuRepo := repositories.NewMenuRepository(db)
 	wargaRepo := repositories.NewWargaRepository(db)
 	iplRepo := repositories.NewIPLRepository(db)
+	iplPaymentRepo := repositories.NewIPLPaymentRepository(db)
 	financeRepo := repositories.NewFinanceRepository(db)
 	pengumumanRepo := repositories.NewPengumumanRepository(db)
 	qurbanRepo := repositories.NewQurbanRepository(db)
@@ -78,6 +80,8 @@ func main() {
 	wargaService := services.NewWargaService(wargaRepo)
 	financeService := services.NewFinanceService(financeRepo)
 	iplService := services.NewIPLService(iplRepo, financeService)
+	ipaymuService := services.NewIPaymuService(cfg.IPaymu)
+	iplPaymentService := services.NewIPLPaymentService(iplPaymentRepo, wargaRepo, ipaymuService, iplService)
 	pengumumanService := services.NewPengumumanService(pengumumanRepo)
 	qurbanService := services.NewQurbanService(qurbanRepo)
 	activityLogService := services.NewActivityLogService(activityLogRepo)
@@ -93,6 +97,7 @@ func main() {
 	menuHandler := handlers.NewMenuHandler(menuService, authService)
 	wargaHandler := handlers.NewWargaHandler(wargaService)
 	iplHandler := handlers.NewIPLHandler(iplService)
+	iplPaymentHandler := handlers.NewIPLPaymentHandler(iplPaymentService)
 	financeHandler := handlers.NewFinanceHandler(financeService)
 	pengumumanHandler := handlers.NewPengumumanHandler(pengumumanService)
 	qurbanHandler := handlers.NewQurbanHandler(qurbanService)
@@ -118,7 +123,7 @@ func main() {
 	})
 
 	// Setup routes
-	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, iplHandler, financeHandler, pengumumanHandler, qurbanHandler, activityLogHandler, authService)
+	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, iplHandler, iplPaymentHandler, financeHandler, pengumumanHandler, qurbanHandler, activityLogHandler, authService)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.AppPort)

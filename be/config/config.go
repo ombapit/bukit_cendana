@@ -13,6 +13,16 @@ type Config struct {
 	DB       DBConfig
 	Redis    RedisConfig
 	JWT      JWTConfig
+	IPaymu   IPaymuConfig
+}
+
+type IPaymuConfig struct {
+	VA        string
+	APIKey    string
+	BaseURL   string
+	NotifyURL string
+	ReturnURL string
+	CancelURL string
 }
 
 type DBConfig struct {
@@ -64,9 +74,17 @@ func Load() *Config {
 			DB:       redisDB,
 		},
 		JWT: JWTConfig{
-			Secret:            getEnv("JWT_SECRET", "your-super-secret-key"),
-			ExpiryHours:       jwtExpiry,
+			Secret:             getEnv("JWT_SECRET", "your-super-secret-key"),
+			ExpiryHours:        jwtExpiry,
 			RefreshExpiryHours: jwtRefreshExpiry,
+		},
+		IPaymu: IPaymuConfig{
+			VA:        getEnv("IPAYMU_VA", ""),
+			APIKey:    getEnv("IPAYMU_API_KEY", ""),
+			BaseURL:   getEnv("IPAYMU_BASE_URL", "https://sandbox.ipaymu.com"),
+			NotifyURL: getEnv("IPAYMU_NOTIFY_URL", ""),
+			ReturnURL: getEnv("IPAYMU_RETURN_URL", ""),
+			CancelURL: getEnv("IPAYMU_CANCEL_URL", ""),
 		},
 	}
 }

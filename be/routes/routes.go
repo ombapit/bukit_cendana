@@ -21,6 +21,7 @@ func Setup(
 	menuHandler *handlers.MenuHandler,
 	wargaHandler *handlers.WargaHandler,
 	iplHandler *handlers.IPLHandler,
+	iplPaymentHandler *handlers.IPLPaymentHandler,
 	financeHandler *handlers.FinanceHandler,
 	pengumumanHandler *handlers.PengumumanHandler,
 	qurbanHandler *handlers.QurbanHandler,
@@ -46,6 +47,11 @@ func Setup(
 		auth.POST("/login", authHandler.Login)
 		auth.POST("/refresh", authHandler.RefreshToken)
 	}
+
+	// === Public: IPL payment (iPaymu) ===
+	api.POST("/ipl-payments", iplPaymentHandler.Initiate)
+	api.GET("/ipl-payments/:reference_id/status", iplPaymentHandler.GetStatus)
+	api.POST("/webhooks/ipaymu", iplPaymentHandler.Webhook)
 
 	// === Public: Activity log (no auth — fired by public page visits) ===
 	api.POST("/activity-logs", activityLogHandler.Create)
