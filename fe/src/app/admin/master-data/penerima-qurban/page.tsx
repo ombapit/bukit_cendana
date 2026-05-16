@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { penerimaQurbanService } from "@/lib/services";
+import { generateKuponQurbanPDF } from "@/lib/kupon-qurban";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
 import type { PenerimaQurban } from "@/types";
-import { Plus, Pencil, Trash2, Search, Loader2 } from "lucide-react";
+import { Plus, Pencil, Printer, Trash2, Search, Loader2 } from "lucide-react";
 
 const KONDISI_OPTIONS = ["", "Ditinggali", "Kosong", "Disewakan"] as const;
 
@@ -19,6 +20,7 @@ export default function PenerimaQurbanPage() {
   const [filterBlok, setFilterBlok] = useState("");
   const [total, setTotal] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
+  const [printing, setPrinting] = useState(false);
 
   // Create modal
   const [createOpen, setCreateOpen] = useState(false);
@@ -237,10 +239,29 @@ export default function PenerimaQurbanPage() {
             Daftar penerima daging qurban Bukit Cendana
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              setPrinting(true);
+              try {
+                const res = await penerimaQurbanService.getAll(1, 1000);
+                const wargas = (res.data?.data || []).filter((w: PenerimaQurban) => w.kondisi_rumah !== "Kosong");
+                await generateKuponQurbanPDF(wargas);
+              } finally {
+                setPrinting(false);
+              }
+            }}
+            loading={printing}
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            Cetak Kupon
+          </Button>
+          <Button onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah
+          </Button>
+        </div>
       </div>
 
       {successMsg && (
