@@ -260,9 +260,20 @@ export interface IPL {
   created_at: string;
 }
 
+export interface PenerimaQurban {
+  id: string;
+  nama: string;
+  blok: string;
+  no_telp?: string;
+  kondisi_rumah?: string;
+  qr_code?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PengambilanQurban {
   id: string;
-  warga_id: string;
+  penerima_qurban_id: string;
   nama_warga: string;
   blok_warga: string;
   status: string;

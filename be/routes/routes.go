@@ -25,6 +25,7 @@ func Setup(
 	financeHandler *handlers.FinanceHandler,
 	pengumumanHandler *handlers.PengumumanHandler,
 	qurbanHandler *handlers.QurbanHandler,
+	penerimaQurbanHandler *handlers.PenerimaQurbanHandler,
 	activityLogHandler *handlers.ActivityLogHandler,
 	authService *services.AuthService,
 ) {
@@ -62,6 +63,9 @@ func Setup(
 		warga.GET("", wargaHandler.FindAll)
 		warga.GET("/:id", wargaHandler.FindByID)
 	}
+
+	// === Public: Penerima Qurban (read-only, no auth) ===
+	api.GET("/penerima-qurban", penerimaQurbanHandler.FindAll)
 
 	// === Public: Finance summary & list (read-only, no auth) ===
 	publicFinance := api.Group("/finance")
@@ -121,6 +125,11 @@ func Setup(
 		protected.GET("/qurban", middleware.RBACMiddleware(authService, "qurban.view"), qurbanHandler.FindAll)
 		protected.POST("/qurban", middleware.RBACMiddleware(authService, "qurban.create"), qurbanHandler.Create)
 		protected.DELETE("/qurban/:id", middleware.RBACMiddleware(authService, "qurban.delete"), qurbanHandler.Delete)
+
+		// === Penerima Qurban (CRUD) ===
+		protected.POST("/penerima-qurban", middleware.RBACMiddleware(authService, "qurban.create"), penerimaQurbanHandler.Create)
+		protected.PUT("/penerima-qurban/:id", middleware.RBACMiddleware(authService, "qurban.update"), penerimaQurbanHandler.Update)
+		protected.DELETE("/penerima-qurban/:id", middleware.RBACMiddleware(authService, "qurban.delete"), penerimaQurbanHandler.Delete)
 
 		// === Users (requires user permissions) ===
 		users := protected.Group("/users")

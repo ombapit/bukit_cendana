@@ -22,35 +22,35 @@ func (r *QurbanRepository) FindAll(page, limit int, search string) ([]models.Pen
 	base := r.db.Raw(`
 		SELECT
 			q.id,
-			q.warga_id,
-			w.nama AS nama_warga,
-			w.blok AS blok_warga,
+			q.penerima_qurban_id,
+			p.nama AS nama_warga,
+			p.blok AS blok_warga,
 			q.status,
 			q.created_by,
 			q.created_at
 		FROM pengambilan_qurban q
-		JOIN warga w ON w.id = q.warga_id
-		WHERE ($1 = '' OR LOWER(w.nama) LIKE '%' || LOWER($1) || '%' OR LOWER(w.blok) LIKE '%' || LOWER($1) || '%')
+		JOIN penerima_qurban p ON p.id = q.penerima_qurban_id
+		WHERE ($1 = '' OR LOWER(p.nama) LIKE '%' || LOWER($1) || '%' OR LOWER(p.blok) LIKE '%' || LOWER($1) || '%')
 	`, search)
 
 	r.db.Raw(`
 		SELECT COUNT(*) FROM pengambilan_qurban q
-		JOIN warga w ON w.id = q.warga_id
-		WHERE ($1 = '' OR LOWER(w.nama) LIKE '%' || LOWER($1) || '%' OR LOWER(w.blok) LIKE '%' || LOWER($1) || '%')
+		JOIN penerima_qurban p ON p.id = q.penerima_qurban_id
+		WHERE ($1 = '' OR LOWER(p.nama) LIKE '%' || LOWER($1) || '%' OR LOWER(p.blok) LIKE '%' || LOWER($1) || '%')
 	`, search).Scan(&total)
 
 	offset := (page - 1) * limit
-	err := base.Order("w.blok ASC, w.nama ASC").
+	err := base.Order("p.blok ASC, p.nama ASC").
 		Limit(limit).Offset(offset).
 		Scan(&results).Error
 
 	return results, total, err
 }
 
-func (r *QurbanRepository) ExistsForWarga(wargaID uuid.UUID) (bool, error) {
+func (r *QurbanRepository) ExistsForPenerima(penerimaID uuid.UUID) (bool, error) {
 	var count int64
 	err := r.db.Model(&models.PengambilanQurban{}).
-		Where("warga_id = ?", wargaID).Count(&count).Error
+		Where("penerima_qurban_id = ?", penerimaID).Count(&count).Error
 	return count > 0, err
 }
 
@@ -61,10 +61,10 @@ func (r *QurbanRepository) Create(q *models.PengambilanQurban) error {
 func (r *QurbanRepository) FindByID(id uuid.UUID) (*models.PengambilanQurbanResponse, error) {
 	var result models.PengambilanQurbanResponse
 	err := r.db.Raw(`
-		SELECT q.id, q.warga_id, w.nama AS nama_warga, w.blok AS blok_warga,
+		SELECT q.id, q.penerima_qurban_id, p.nama AS nama_warga, p.blok AS blok_warga,
 		       q.status, q.created_by, q.created_at
 		FROM pengambilan_qurban q
-		JOIN warga w ON w.id = q.warga_id
+		JOIN penerima_qurban p ON p.id = q.penerima_qurban_id
 		WHERE q.id = $1
 	`, id).Scan(&result).Error
 	if result.ID == uuid.Nil {

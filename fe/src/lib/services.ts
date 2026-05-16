@@ -25,6 +25,7 @@ import type {
   UpdateWargaRequest,
   IPL,
   PengambilanQurban,
+  PenerimaQurban,
   ActivityLog,
 } from "@/types";
 
@@ -247,6 +248,24 @@ export const activityLogService = {
     }),
 };
 
+// ============ Penerima Qurban ============
+export const penerimaQurbanService = {
+  getAll: (page = 1, limit = 1000, search = "") => {
+    let url = `/penerima-qurban?page=${page}&limit=${limit}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return api.get<APIResponse<PenerimaQurban[]>>(url);
+  },
+
+  create: (data: { nama: string; blok: string; no_telp?: string; kondisi_rumah?: string }) =>
+    api.post<APIResponse<PenerimaQurban>>("/penerima-qurban", data),
+
+  update: (id: string, data: { nama?: string; blok?: string; no_telp?: string; kondisi_rumah?: string }) =>
+    api.put<APIResponse<PenerimaQurban>>(`/penerima-qurban/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<APIResponse>(`/penerima-qurban/${id}`),
+};
+
 // ============ Qurban ============
 export const qurbanService = {
   getAll: (page = 1, limit = 100, search = "") => {
@@ -255,7 +274,7 @@ export const qurbanService = {
     return api.get<APIResponse<PengambilanQurban[]>>(url);
   },
 
-  create: (data: { warga_id: string; status: string }) =>
+  create: (data: { penerima_qurban_id: string; status: string }) =>
     api.post<APIResponse<PengambilanQurban>>("/qurban", data),
 
   delete: (id: string) =>

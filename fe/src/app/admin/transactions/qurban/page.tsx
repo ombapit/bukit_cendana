@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { qurbanService, wargaService } from "@/lib/services";
+import { qurbanService, penerimaQurbanService } from "@/lib/services";
 import { generateKuponQurbanPDF } from "@/lib/kupon-qurban";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
 import { QRScanner } from "@/components/ui/qr-scanner";
-import type { PengambilanQurban, WargaWithLastPayment } from "@/types";
+import type { PengambilanQurban, PenerimaQurban } from "@/types";
 import {
   Plus, Trash2, Search, Loader2, FileDown,
   ScanLine, X, Printer,
@@ -61,9 +61,9 @@ async function exportQurbanXLS(filename: string, rows: PengambilanQurban[]) {
   URL.revokeObjectURL(url);
 }
 
-// ── Searchable warga combobox ──────────────────────────────────────────────
+// ── Searchable penerima combobox ───────────────────────────────────────────
 interface WargaComboboxProps {
-  warga: WargaWithLastPayment[];
+  warga: PenerimaQurban[];
   selectedID: string;
   onSelect: (id: string, label: string) => void;
 }
@@ -166,7 +166,7 @@ export default function QurbanPage() {
 
   // Create modal
   const [createOpen, setCreateOpen] = useState(false);
-  const [allWarga, setAllWarga] = useState<WargaWithLastPayment[]>([]);
+  const [allWarga, setAllWarga] = useState<PenerimaQurban[]>([]);
   const [wargaLoading, setWargaLoading] = useState(false);
   const [selectedWargaID, setSelectedWargaID] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Kupon Sudah Dibagikan");
@@ -212,9 +212,9 @@ export default function QurbanPage() {
     setCreateOpen(true);
     setWargaLoading(true);
     try {
-      const res = await wargaService.getAll(1, 1000);
-      const all: WargaWithLastPayment[] = res.data?.data || [];
-      const takenIDs = new Set(records.map((r) => r.warga_id));
+      const res = await penerimaQurbanService.getAll(1, 1000);
+      const all: PenerimaQurban[] = res.data?.data || [];
+      const takenIDs = new Set(records.map((r) => r.penerima_qurban_id));
       setAllWarga(all.filter((w) => !takenIDs.has(String(w.id)) && w.kondisi_rumah !== "Kosong"));
     } catch {
       setAllWarga([]);
@@ -230,7 +230,7 @@ export default function QurbanPage() {
     setCreating(true);
     setCreateError("");
     try {
-      await qurbanService.create({ warga_id: selectedWargaID, status: selectedStatus });
+      await qurbanService.create({ penerima_qurban_id: selectedWargaID, status: selectedStatus });
       setCreateOpen(false);
       showSuccess("Data pengambilan qurban berhasil disimpan");
       fetchRecords();
@@ -265,7 +265,7 @@ export default function QurbanPage() {
     const found = allWarga.find((w) => String(w.id) === parsed.id);
     if (!found) {
       // Maybe already recorded
-      const alreadyRecorded = records.some((r) => r.warga_id === parsed.id);
+      const alreadyRecorded = records.some((r) => r.penerima_qurban_id === parsed.id);
       if (alreadyRecorded) {
         setScanFeedback({ type: "err", msg: `${parsed.nama} (${parsed.blok}) sudah tercatat` });
       } else {
@@ -381,8 +381,8 @@ export default function QurbanPage() {
             onClick={async () => {
               setPrinting(true);
               try {
-                const res = await wargaService.getAll(1, 1000);
-                const wargas = (res.data?.data || []).filter((w: WargaWithLastPayment) => w.kondisi_rumah !== "Kosong");
+                const res = await penerimaQurbanService.getAll(1, 1000);
+                const wargas = (res.data?.data || []).filter((w: PenerimaQurban) => w.kondisi_rumah !== "Kosong");
                 await generateKuponQurbanPDF(wargas);
               } finally {
                 setPrinting(false);

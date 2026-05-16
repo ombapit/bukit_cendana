@@ -1,4 +1,4 @@
-import type { WargaWithLastPayment } from "@/types";
+import type { PenerimaQurban } from "@/types";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace("/api/v1", "");
 
@@ -18,7 +18,7 @@ async function toBase64(url: string): Promise<string | null> {
 }
 
 // Pre-fetch all QR codes in parallel before drawing
-async function prefetchQRCodes(wargas: WargaWithLastPayment[]): Promise<Map<string, string>> {
+async function prefetchQRCodes(wargas: PenerimaQurban[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   await Promise.all(
     wargas
@@ -43,7 +43,7 @@ const GAP_Y = (297 - MARGIN_Y * 2 - ROWS * CH) / (ROWS - 1); // ~5mm
 
 function drawKupon(
   doc: import("jspdf").jsPDF,
-  warga: WargaWithLastPayment,
+  warga: PenerimaQurban,
   x: number,
   y: number,
   qrB64: string | null,
@@ -110,7 +110,7 @@ function drawKupon(
   doc.text(warga.blok, x + CW / 2, blokY + 5.5, { align: "center" });
 }
 
-export async function generateKuponQurbanPDF(wargas: WargaWithLastPayment[]) {
+export async function generateKuponQurbanPDF(wargas: PenerimaQurban[]) {
   const { default: jsPDF } = await import("jspdf");
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });

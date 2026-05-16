@@ -22,17 +22,17 @@ func (s *QurbanService) FindAll(page, limit int, search string) ([]models.Pengam
 }
 
 func (s *QurbanService) Create(req models.CreateQurbanRequest, createdBy string) (*models.PengambilanQurbanResponse, error) {
-	wargaID, err := uuid.Parse(req.WargaID)
+	penerimaID, err := uuid.Parse(req.PenerimaQurbanID)
 	if err != nil {
-		return nil, errors.New("warga_id tidak valid")
+		return nil, errors.New("penerima_qurban_id tidak valid")
 	}
 
-	exists, err := s.repo.ExistsForWarga(wargaID)
+	exists, err := s.repo.ExistsForPenerima(penerimaID)
 	if err != nil {
 		return nil, errors.New("gagal mengecek data")
 	}
 	if exists {
-		return nil, errors.New("warga ini sudah tercatat pengambilan qurbannya")
+		return nil, errors.New("penerima ini sudah tercatat pengambilan qurbannya")
 	}
 
 	status := req.Status
@@ -41,9 +41,9 @@ func (s *QurbanService) Create(req models.CreateQurbanRequest, createdBy string)
 	}
 
 	q := &models.PengambilanQurban{
-		WargaID:   wargaID,
-		Status:    status,
-		CreatedBy: createdBy,
+		PenerimaQurbanID: penerimaID,
+		Status:           status,
+		CreatedBy:        createdBy,
 	}
 	if err := s.repo.Create(q); err != nil {
 		return nil, errors.New("gagal menyimpan data")
