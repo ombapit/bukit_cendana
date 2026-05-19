@@ -408,15 +408,37 @@ export default function WargaAdminPage() {
 
   const handleExport = async () => {
     setExporting(true);
-    await exportWargaXLS("Data_Warga_Bukit_Cendana", wargas.map((w, i) => ({
-      no: i + 1,
-      nama: w.nama,
-      blok: w.blok,
-      no_telp: w.no_telp || "-",
-      iuran: w.iuran,
-      last_payment_label: formatLastPayment(w.last_payment),
-      last_payment_raw: w.last_payment,
-    })));
+    try {
+      const anggotaRes = await anggotaKeluargaService.getAll();
+      const allAnggota = anggotaRes.data?.data || [];
+      const wargaMap = new Map(wargas.map((w) => [String(w.id), w]));
+
+      const anggotaRows = allAnggota.map((a, i) => {
+        const kk = wargaMap.get(a.warga_id);
+        return {
+          no: i + 1,
+          nama_kk: kk?.nama || "-",
+          blok: kk?.blok || "-",
+          nama: a.nama,
+          status_hubungan: a.status_hubungan || "-",
+          no_telp: a.no_telp || "-",
+        };
+      });
+
+      await exportWargaXLS(
+        "Data_Warga_Bukit_Cendana",
+        wargas.map((w, i) => ({
+          no: i + 1,
+          nama: w.nama,
+          blok: w.blok,
+          no_telp: "",
+          iuran: w.iuran,
+          last_payment_label: formatLastPayment(w.last_payment),
+          last_payment_raw: w.last_payment,
+        })),
+        anggotaRows,
+      );
+    } catch { /* silent */ }
     setExporting(false);
   };
 

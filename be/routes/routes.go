@@ -58,6 +58,9 @@ func Setup(
 	// === Public: Activity log (no auth — fired by public page visits) ===
 	api.POST("/activity-logs", activityLogHandler.Create)
 
+	// === Public: Anggota Keluarga (read-only) ===
+	api.GET("/anggota-keluarga", anggotaHandler.FindAll)
+
 	// === Public: Warga (no auth required) ===
 	warga := api.Group("/warga")
 	{

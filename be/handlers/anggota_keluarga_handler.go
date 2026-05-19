@@ -19,6 +19,15 @@ func NewAnggotaKeluargaHandler(svc *services.AnggotaKeluargaService) *AnggotaKel
 	return &AnggotaKeluargaHandler{svc: svc}
 }
 
+func (h *AnggotaKeluargaHandler) FindAll(c *gin.Context) {
+	list, err := h.svc.FindAll()
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.SuccessResponse(c, "Anggota keluarga retrieved", list)
+}
+
 func (h *AnggotaKeluargaHandler) FindByWargaID(c *gin.Context) {
 	wargaID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
