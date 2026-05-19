@@ -246,7 +246,12 @@ export default function PenerimaQurbanPage() {
               setPrinting(true);
               try {
                 const res = await penerimaQurbanService.getAll(1, 1000);
-                const wargas = (res.data?.data || []).filter((w: PenerimaQurban) => w.kondisi_rumah !== "Kosong");
+                const wargas = (res.data?.data || [])
+                  .filter((w: PenerimaQurban) => w.kondisi_rumah !== "Kosong")
+                  .sort((a: PenerimaQurban, b: PenerimaQurban) =>
+                    a.blok.localeCompare(b.blok, "id", { numeric: true }) ||
+                    a.nama.localeCompare(b.nama, "id")
+                  );
                 await generateKuponQurbanPDF(wargas);
               } finally {
                 setPrinting(false);
