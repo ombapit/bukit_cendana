@@ -7,7 +7,90 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
 import type { PenerimaQurban } from "@/types";
-import { Plus, Pencil, Printer, Trash2, Search, Loader2 } from "lucide-react";
+import { Plus, Pencil, Printer, FileDown, Trash2, Search, Loader2 } from "lucide-react";
+import ExcelJS from "exceljs";
+
+async function exportPenerimaXLS(judul: string, filename: string, rows: PenerimaQurban[]) {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(judul);
+
+  const COLS = 4;
+
+  // Title row
+  ws.mergeCells(1, 1, 1, COLS);
+  const titleCell = ws.getCell("A1");
+  titleCell.value = judul;
+  titleCell.font = { bold: true, size: 13 };
+  titleCell.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(1).height = 24;
+
+  // Blank separator
+  ws.addRow([]);
+
+  // Header row
+  const headerRow = ws.addRow(["No", "Nama", "Blok", "Status"]);
+  headerRow.height = 18;
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
+    cell.border = {
+      top:    { style: "thin" },
+      left:   { style: "thin" },
+      bottom: { style: "thin" },
+      right:  { style: "thin" },
+    };
+  });
+
+  // Data rows
+  const sorted = [...rows].sort(
+    (a, b) =>
+      a.blok.localeCompare(b.blok, "id", { numeric: true }) ||
+      a.nama.localeCompare(b.nama, "id")
+  );
+  sorted.forEach((r, i) => {
+    const row = ws.addRow([i + 1, r.nama, r.blok, ""]);
+    row.height = 16;
+    row.eachCell({ includeEmpty: true }, (cell, col) => {
+      cell.alignment = {
+        horizontal: col === 1 || col === 3 ? "center" : "left",
+        vertical: "middle",
+      };
+      cell.border = {
+        top:    { style: "thin" },
+        left:   { style: "thin" },
+        bottom: { style: "thin" },
+        right:  { style: "thin" },
+      };
+    });
+  });
+
+  // Column widths
+  ws.getColumn(1).width = 6;
+  ws.getColumn(2).width = 32;
+  ws.getColumn(3).width = 14;
+  ws.getColumn(4).width = 22;
+
+  // Print setup: portrait, fit to 1 page wide
+  ws.pageSetup = {
+    orientation: "portrait",
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    margins: { left: 0.5, right: 0.5, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 },
+  };
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${filename}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 const KONDISI_OPTIONS = ["", "Ditinggali", "Kosong", "Disewakan"] as const;
 
@@ -21,6 +104,8 @@ export default function PenerimaQurbanPage() {
   const [total, setTotal] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
   const [printing, setPrinting] = useState(false);
+  const [exportingKupon, setExportingKupon] = useState(false);
+  const [exportingPenerimaan, setExportingPenerimaan] = useState(false);
 
   // Create modal
   const [createOpen, setCreateOpen] = useState(false);
@@ -261,6 +346,32 @@ export default function PenerimaQurbanPage() {
           >
             <Printer className="w-4 h-4 mr-2" />
             Cetak Kupon
+          </Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              setExportingKupon(true);
+              await exportPenerimaXLS("Pembagian Kupon Qurban", "Pembagian_Kupon_Qurban", data);
+              setExportingKupon(false);
+            }}
+            loading={exportingKupon}
+            disabled={data.length === 0}
+          >
+            <FileDown className="w-4 h-4 mr-2" />
+            Kupon
+          </Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              setExportingPenerimaan(true);
+              await exportPenerimaXLS("Penerimaan Qurban", "Penerimaan_Qurban", data);
+              setExportingPenerimaan(false);
+            }}
+            loading={exportingPenerimaan}
+            disabled={data.length === 0}
+          >
+            <FileDown className="w-4 h-4 mr-2" />
+            Penerimaan
           </Button>
           <Button onClick={openCreate}>
             <Plus className="w-4 h-4 mr-2" />
