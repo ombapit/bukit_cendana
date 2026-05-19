@@ -31,3 +31,7 @@ type CreateQurbanRequest struct {
 	PenerimaQurbanID string `json:"penerima_qurban_id" binding:"required"`
 	Status           string `json:"status"`
 }
+
+type UpdateQurbanRequest struct {
+	Status string `json:"status" binding:"required"`
+}

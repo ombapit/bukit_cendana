@@ -296,6 +296,9 @@ export const qurbanService = {
   create: (data: { penerima_qurban_id: string; status: string }) =>
     api.post<APIResponse<PengambilanQurban>>("/qurban", data),
 
+  update: (id: string, data: { status: string }) =>
+    api.put<APIResponse<PengambilanQurban>>(`/qurban/${id}`, data),
+
   delete: (id: string) =>
     api.delete<APIResponse>(`/qurban/${id}`),
 };

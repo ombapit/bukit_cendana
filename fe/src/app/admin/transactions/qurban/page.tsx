@@ -9,7 +9,7 @@ import { QRScanner } from "@/components/ui/qr-scanner";
 import type { PengambilanQurban, PenerimaQurban } from "@/types";
 import {
   Plus, Trash2, Search, Loader2, FileDown,
-  ScanLine, X,
+  ScanLine, X, RefreshCw,
 } from "lucide-react";
 import ExcelJS from "exceljs";
 
@@ -128,7 +128,7 @@ function WargaCombobox({ warga, selectedID, onSelect }: WargaComboboxProps) {
             <li className="px-3 py-2 text-gray-400 dark:text-gray-500">Tidak ditemukan</li>
           ) : (
             filtered
-              .sort((a, b) => a.blok.localeCompare(b.blok) || a.nama.localeCompare(b.nama))
+              .sort((a, b) => a.blok.localeCompare(b.blok, "id", { numeric: true, sensitivity: "base" }) || a.nama.localeCompare(b.nama, "id"))
               .map((w) => (
                 <li
                   key={String(w.id)}
@@ -172,6 +172,10 @@ export default function QurbanPage() {
   const [creating, setCreating] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanFeedback, setScanFeedback] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+
+  // Update modal
+  const [updateOpen, setUpdateOpen] = useState(false);
+  const [updatingID, setUpdatingID] = useState<string | null>(null);
 
   // Delete modal
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -276,6 +280,19 @@ export default function QurbanPage() {
     setScanFeedback({ type: "ok", msg: `QR terbaca: ${parsed.nama} — ${parsed.blok}` });
   }, [allWarga, records]);
 
+  // ── Update status ───────────────────────────────────────────────────────
+  const handleUpdateStatus = async (id: string) => {
+    setUpdatingID(id);
+    try {
+      await qurbanService.update(id, { status: "Sudah Diambil" });
+      showSuccess("Status berhasil diperbarui");
+      fetchRecords();
+    } catch {
+      // leave modal open so user can retry
+    }
+    setUpdatingID(null);
+  };
+
   // ── Delete ──────────────────────────────────────────────────────────────
   const openDelete = (r: PengambilanQurban) => {
     setDeletingRecord(r);
@@ -300,9 +317,19 @@ export default function QurbanPage() {
   const blokOptions = Array.from(new Set(records.map((r) => blokPrefix(r.blok_warga)).filter(Boolean)))
     .sort((a, b) => a.localeCompare(b, "id", { numeric: true }));
 
-  const displayedRecords = filterBlok
+  const displayedRecords = (filterBlok
     ? records.filter((r) => blokPrefix(r.blok_warga) === filterBlok)
-    : records;
+    : records
+  ).sort((a, b) =>
+    a.blok_warga.localeCompare(b.blok_warga, "id", { numeric: true, sensitivity: "base" }) ||
+    a.nama_warga.localeCompare(b.nama_warga, "id")
+  );
+
+  const kuponRecords = records.filter((r) => r.status === "Kupon Sudah Dibagikan")
+    .sort((a, b) =>
+      a.blok_warga.localeCompare(b.blok_warga, "id", { numeric: true, sensitivity: "base" }) ||
+      a.nama_warga.localeCompare(b.nama_warga, "id")
+    );
 
   const columns = [
     {
@@ -386,6 +413,10 @@ export default function QurbanPage() {
           >
             <FileDown className="w-4 h-4 mr-2" />
             Export XLS
+          </Button>
+          <Button variant="outline" onClick={() => setUpdateOpen(true)} disabled={kuponRecords.length === 0}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Update
           </Button>
           <Button onClick={openCreate}>
             <Plus className="w-4 h-4 mr-2" />
@@ -479,6 +510,41 @@ export default function QurbanPage() {
           </p>
         </>
       )}
+
+      {/* ========== Modal: Update Status ========== */}
+      <Modal open={updateOpen} onClose={() => setUpdateOpen(false)} title="Update Status Pengambilan" size="md">
+        <div className="space-y-3">
+          {kuponRecords.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+              Tidak ada warga dengan status "Kupon Sudah Dibagikan".
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {kuponRecords.map((r) => (
+                <div key={r.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{r.nama_warga}</p>
+                    <span className="inline-block mt-0.5 px-2 py-0.5 text-xs rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
+                      {r.blok_warga}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleUpdateStatus(r.id)}
+                    loading={updatingID === r.id}
+                    disabled={updatingID !== null}
+                  >
+                    Sudah Diambil
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end pt-2 border-t border-white/20 dark:border-white/10">
+            <Button variant="outline" onClick={() => setUpdateOpen(false)}>Tutup</Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* ========== Modal: Create ========== */}
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Tambah Pengambilan Qurban" size="md">

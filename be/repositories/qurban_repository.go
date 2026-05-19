@@ -19,7 +19,14 @@ func (r *QurbanRepository) FindAll(page, limit int, search string) ([]models.Pen
 	var results []models.PengambilanQurbanResponse
 	var total int64
 
-	base := r.db.Raw(`
+	r.db.Raw(`
+		SELECT COUNT(*) FROM pengambilan_qurban q
+		JOIN penerima_qurban p ON p.id = q.penerima_qurban_id
+		WHERE ($1 = '' OR LOWER(p.nama) LIKE '%' || LOWER($1) || '%' OR LOWER(p.blok) LIKE '%' || LOWER($1) || '%')
+	`, search).Scan(&total)
+
+	offset := (page - 1) * limit
+	err := r.db.Raw(`
 		SELECT
 			q.id,
 			q.penerima_qurban_id,
@@ -31,18 +38,12 @@ func (r *QurbanRepository) FindAll(page, limit int, search string) ([]models.Pen
 		FROM pengambilan_qurban q
 		JOIN penerima_qurban p ON p.id = q.penerima_qurban_id
 		WHERE ($1 = '' OR LOWER(p.nama) LIKE '%' || LOWER($1) || '%' OR LOWER(p.blok) LIKE '%' || LOWER($1) || '%')
-	`, search)
-
-	r.db.Raw(`
-		SELECT COUNT(*) FROM pengambilan_qurban q
-		JOIN penerima_qurban p ON p.id = q.penerima_qurban_id
-		WHERE ($1 = '' OR LOWER(p.nama) LIKE '%' || LOWER($1) || '%' OR LOWER(p.blok) LIKE '%' || LOWER($1) || '%')
-	`, search).Scan(&total)
-
-	offset := (page - 1) * limit
-	err := base.Order("p.blok ASC, p.nama ASC").
-		Limit(limit).Offset(offset).
-		Scan(&results).Error
+		ORDER BY
+			split_part(p.blok, '/', 1) ASC,
+			CAST(NULLIF(split_part(p.blok, '/', 2), '') AS INTEGER) ASC,
+			p.nama ASC
+		LIMIT $2 OFFSET $3
+	`, search, limit, offset).Scan(&results).Error
 
 	return results, total, err
 }
@@ -71,6 +72,17 @@ func (r *QurbanRepository) FindByID(id uuid.UUID) (*models.PengambilanQurbanResp
 		return nil, gorm.ErrRecordNotFound
 	}
 	return &result, err
+}
+
+func (r *QurbanRepository) UpdateStatus(id uuid.UUID, status string) error {
+	result := r.db.Model(&models.PengambilanQurban{}).Where("id = ?", id).Update("status", status)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *QurbanRepository) Delete(id uuid.UUID) error {
