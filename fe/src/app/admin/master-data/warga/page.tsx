@@ -125,15 +125,17 @@ export default function WargaAdminPage() {
   const blokOptions = Array.from(new Set(wargas.map((w) => blokPrefix(w.blok)).filter(Boolean)))
     .sort((a, b) => a.localeCompare(b, "id", { numeric: true }));
 
-  const filtered = wargas.filter((w) => {
-    if (filterBlok && blokPrefix(w.blok) !== filterBlok) return false;
-    if (filterKondisi && (w.kondisi_rumah || "") !== filterKondisi) return false;
-    if (search) {
-      const s = search.toLowerCase();
-      return w.nama.toLowerCase().includes(s) || w.blok.toLowerCase().includes(s);
-    }
-    return true;
-  });
+  const filtered = wargas
+    .filter((w) => {
+      if (filterBlok && blokPrefix(w.blok) !== filterBlok) return false;
+      if (filterKondisi && (w.kondisi_rumah || "") !== filterKondisi) return false;
+      if (search) {
+        const s = search.toLowerCase();
+        return w.nama.toLowerCase().includes(s) || w.blok.toLowerCase().includes(s);
+      }
+      return true;
+    })
+    .sort((a, b) => a.blok.localeCompare(b.blok, "id", { numeric: true, sensitivity: "base" }) || a.nama.localeCompare(b.nama, "id"));
 
   // ========== Create ==========
   const openCreate = () => {
