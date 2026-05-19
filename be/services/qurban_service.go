@@ -52,6 +52,16 @@ func (s *QurbanService) Create(req models.CreateQurbanRequest, createdBy string)
 	return s.repo.FindByID(q.ID)
 }
 
+func (s *QurbanService) UpdateStatus(id uuid.UUID, status string) (*models.PengambilanQurbanResponse, error) {
+	if _, err := s.repo.FindByID(id); err != nil {
+		return nil, errors.New("data tidak ditemukan")
+	}
+	if err := s.repo.UpdateStatus(id, status); err != nil {
+		return nil, errors.New("gagal memperbarui status")
+	}
+	return s.repo.FindByID(id)
+}
+
 func (s *QurbanService) Delete(id uuid.UUID) error {
 	if _, err := s.repo.FindByID(id); err != nil {
 		return errors.New("data tidak ditemukan")

@@ -57,6 +57,25 @@ func (h *QurbanHandler) Create(c *gin.Context) {
 	utils.CreatedResponse(c, "Data pengambilan qurban berhasil disimpan", result)
 }
 
+func (h *QurbanHandler) Update(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "ID tidak valid")
+		return
+	}
+	var req models.UpdateQurbanRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	result, err := h.service.UpdateStatus(id, req.Status)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	utils.SuccessResponse(c, "Status berhasil diperbarui", result)
+}
+
 func (h *QurbanHandler) Delete(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

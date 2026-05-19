@@ -138,6 +138,7 @@ func Setup(
 		// === Qurban ===
 		protected.GET("/qurban", middleware.RBACMiddleware(authService, "qurban.view"), qurbanHandler.FindAll)
 		protected.POST("/qurban", middleware.RBACMiddleware(authService, "qurban.create"), qurbanHandler.Create)
+		protected.PUT("/qurban/:id", middleware.RBACMiddleware(authService, "qurban.update"), qurbanHandler.Update)
 		protected.DELETE("/qurban/:id", middleware.RBACMiddleware(authService, "qurban.delete"), qurbanHandler.Delete)
 
 		// === Penerima Qurban (CRUD) ===
