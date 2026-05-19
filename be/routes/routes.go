@@ -20,6 +20,7 @@ func Setup(
 	permHandler *handlers.PermissionHandler,
 	menuHandler *handlers.MenuHandler,
 	wargaHandler *handlers.WargaHandler,
+	anggotaHandler *handlers.AnggotaKeluargaHandler,
 	iplHandler *handlers.IPLHandler,
 	iplPaymentHandler *handlers.IPLPaymentHandler,
 	financeHandler *handlers.FinanceHandler,
@@ -62,6 +63,7 @@ func Setup(
 	{
 		warga.GET("", wargaHandler.FindAll)
 		warga.GET("/:id", wargaHandler.FindByID)
+		warga.GET("/:id/anggota", anggotaHandler.FindByWargaID)
 	}
 
 	// === Public: Penerima Qurban (read-only, no auth) ===
@@ -88,6 +90,15 @@ func Setup(
 		protectedWarga.POST("", middleware.RBACMiddleware(authService, "warga.create"), wargaHandler.Create)
 		protectedWarga.PUT("/:id", middleware.RBACMiddleware(authService, "warga.update"), wargaHandler.Update)
 		protectedWarga.DELETE("/:id", middleware.RBACMiddleware(authService, "warga.delete"), wargaHandler.Delete)
+		protectedWarga.POST("/:id/anggota", middleware.RBACMiddleware(authService, "warga.create"), anggotaHandler.Create)
+	}
+
+	// === Protected: Anggota Keluarga (update/delete) ===
+	protectedAnggota := api.Group("/anggota-keluarga")
+	protectedAnggota.Use(middleware.AuthMiddleware(cfg))
+	{
+		protectedAnggota.PUT("/:id", middleware.RBACMiddleware(authService, "warga.update"), anggotaHandler.Update)
+		protectedAnggota.DELETE("/:id", middleware.RBACMiddleware(authService, "warga.delete"), anggotaHandler.Delete)
 	}
 
 	// === Protected routes ===

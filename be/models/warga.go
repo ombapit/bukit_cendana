@@ -26,7 +26,6 @@ type WargaResponse struct {
 	ID           uuid.UUID `json:"id"`
 	Nama         string    `json:"nama"`
 	Blok         string    `json:"blok"`
-	NoTelp       string    `json:"no_telp,omitempty"`
 	Iuran        float64   `json:"iuran"`
 	KondisiRumah string    `json:"kondisi_rumah,omitempty"`
 	QRCode       string    `json:"qr_code,omitempty"`
@@ -37,7 +36,6 @@ func (w *Warga) ToResponse() WargaResponse {
 		ID:           w.ID,
 		Nama:         w.Nama,
 		Blok:         w.Blok,
-		NoTelp:       w.NoTelp,
 		Iuran:        w.Iuran,
 		KondisiRumah: w.KondisiRumah,
 		QRCode:       w.QRCode,
@@ -48,7 +46,6 @@ type WargaWithLastPayment struct {
 	ID           uuid.UUID `json:"id" gorm:"type:uuid;column:id"`
 	Nama         string    `json:"nama" gorm:"column:nama"`
 	Blok         string    `json:"blok" gorm:"column:blok"`
-	NoTelp       string    `json:"no_telp,omitempty" gorm:"column:no_telp"`
 	Iuran        float64   `json:"iuran" gorm:"column:iuran"`
 	KondisiRumah string    `json:"kondisi_rumah" gorm:"column:kondisi_rumah"`
 	QRCode       string    `json:"qr_code" gorm:"column:qr_code"`

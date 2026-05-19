@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { wargaService } from "@/lib/services";
+import { wargaService, anggotaKeluargaService } from "@/lib/services";
 import { exportWargaXLS } from "@/lib/export";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
-import type { WargaWithLastPayment } from "@/types";
+import type { WargaWithLastPayment, AnggotaKeluarga } from "@/types";
 import {
   Plus,
   Pencil,
@@ -16,6 +16,7 @@ import {
   FileDown,
   QrCode,
   Download,
+  Users,
 } from "lucide-react";
 
 function formatIuran(value: number): string {
@@ -47,6 +48,7 @@ function getQRImageURL(qrCode: string): string {
 const KONDISI_OPTIONS = ["", "Ditinggali", "Kosong", "Disewakan"] as const;
 
 const emptyForm = { nama: "", blok: "", no_telp: "", iuran: "", kondisi_rumah: "" };
+const emptyAnggotaForm = { nama: "", status_hubungan: "", no_telp: "" };
 
 export default function WargaAdminPage() {
   const [wargas, setWargas] = useState<WargaWithLastPayment[]>([]);
@@ -78,6 +80,22 @@ export default function WargaAdminPage() {
 
   // QR modal
   const [qrWarga, setQrWarga] = useState<WargaWithLastPayment | null>(null);
+
+  // Anggota modal
+  const [anggotaWarga, setAnggotaWarga] = useState<WargaWithLastPayment | null>(null);
+  const [anggotaList, setAnggotaList] = useState<AnggotaKeluarga[]>([]);
+  const [anggotaLoading, setAnggotaLoading] = useState(false);
+
+  // Anggota create/edit form
+  const [anggotaFormOpen, setAnggotaFormOpen] = useState(false);
+  const [editingAnggota, setEditingAnggota] = useState<AnggotaKeluarga | null>(null);
+  const [anggotaForm, setAnggotaForm] = useState(emptyAnggotaForm);
+  const [anggotaFormError, setAnggotaFormError] = useState("");
+  const [anggotaFormSaving, setAnggotaFormSaving] = useState(false);
+
+  // Anggota delete
+  const [deletingAnggota, setDeletingAnggota] = useState<AnggotaKeluarga | null>(null);
+  const [anggotaDeleting, setAnggotaDeleting] = useState(false);
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -209,6 +227,67 @@ export default function WargaAdminPage() {
     setDeleting(false);
   };
 
+  // ========== Anggota Keluarga ==========
+  const openAnggota = async (w: WargaWithLastPayment) => {
+    setAnggotaWarga(w);
+    setAnggotaLoading(true);
+    try {
+      const res = await anggotaKeluargaService.getByWarga(String(w.id));
+      setAnggotaList(res.data?.data || []);
+    } catch {
+      setAnggotaList([]);
+    }
+    setAnggotaLoading(false);
+  };
+
+  const openAnggotaCreate = () => {
+    setEditingAnggota(null);
+    setAnggotaForm(emptyAnggotaForm);
+    setAnggotaFormError("");
+    setAnggotaFormOpen(true);
+  };
+
+  const openAnggotaEdit = (a: AnggotaKeluarga) => {
+    setEditingAnggota(a);
+    setAnggotaForm({ nama: a.nama, status_hubungan: a.status_hubungan, no_telp: a.no_telp });
+    setAnggotaFormError("");
+    setAnggotaFormOpen(true);
+  };
+
+  const handleAnggotaSave = async () => {
+    if (!anggotaForm.nama.trim()) {
+      setAnggotaFormError("Nama wajib diisi");
+      return;
+    }
+    setAnggotaFormSaving(true);
+    setAnggotaFormError("");
+    try {
+      if (editingAnggota) {
+        await anggotaKeluargaService.update(editingAnggota.id, anggotaForm);
+      } else {
+        await anggotaKeluargaService.create(String(anggotaWarga!.id), anggotaForm);
+      }
+      setAnggotaFormOpen(false);
+      const res = await anggotaKeluargaService.getByWarga(String(anggotaWarga!.id));
+      setAnggotaList(res.data?.data || []);
+    } catch {
+      setAnggotaFormError("Gagal menyimpan data");
+    }
+    setAnggotaFormSaving(false);
+  };
+
+  const handleAnggotaDelete = async () => {
+    if (!deletingAnggota) return;
+    setAnggotaDeleting(true);
+    try {
+      await anggotaKeluargaService.delete(deletingAnggota.id);
+      setDeletingAnggota(null);
+      const res = await anggotaKeluargaService.getByWarga(String(anggotaWarga!.id));
+      setAnggotaList(res.data?.data || []);
+    } catch { /* stay open */ }
+    setAnggotaDeleting(false);
+  };
+
   // ========== QR Download ==========
   const handleDownloadQR = async (w: WargaWithLastPayment) => {
     if (!w.qr_code) return;
@@ -309,6 +388,13 @@ export default function WargaAdminPage() {
       header: "Aksi",
       render: (w: WargaWithLastPayment) => (
         <div className="flex gap-1">
+          <button
+            onClick={() => openAnggota(w)}
+            className="p-1.5 rounded-lg hover:bg-blue-500/10 transition-colors"
+            title="Anggota Keluarga"
+          >
+            <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          </button>
           <button
             onClick={() => openEdit(w)}
             className="p-1.5 rounded-lg hover:bg-white/40 dark:hover:bg-white/5 transition-colors"
@@ -438,6 +524,9 @@ export default function WargaAdminPage() {
                           {w.no_telp && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{w.no_telp}</p>}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
+                          <button onClick={() => openAnggota(w)} className="p-1.5 rounded-lg hover:bg-blue-500/10 transition-colors" title="Anggota Keluarga">
+                            <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          </button>
                           <button onClick={() => openEdit(w)} className="p-1.5 rounded-lg hover:bg-white/40 dark:hover:bg-white/5 transition-colors" title="Edit">
                             <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                           </button>
@@ -658,6 +747,148 @@ export default function WargaAdminPage() {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>Batal</Button>
             <Button variant="danger" onClick={handleDelete} loading={deleting}>Hapus</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ========== Modal: Anggota Keluarga ========== */}
+      <Modal
+        open={!!anggotaWarga}
+        onClose={() => setAnggotaWarga(null)}
+        title={anggotaWarga ? `Anggota Keluarga — ${anggotaWarga.nama} (${anggotaWarga.blok})` : ""}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={openAnggotaCreate}>
+              <Plus className="w-4 h-4 mr-1" />
+              Tambah Anggota
+            </Button>
+          </div>
+
+          {anggotaLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            </div>
+          ) : anggotaList.length === 0 ? (
+            <p className="text-center text-gray-400 dark:text-gray-500 text-sm py-6">
+              Belum ada anggota keluarga
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/20 dark:border-white/10 text-left">
+                    <th className="pb-2 font-medium text-gray-600 dark:text-gray-400">Nama</th>
+                    <th className="pb-2 font-medium text-gray-600 dark:text-gray-400">Status</th>
+                    <th className="pb-2 font-medium text-gray-600 dark:text-gray-400">No. Telp</th>
+                    <th className="pb-2 w-16"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10 dark:divide-white/5">
+                  {anggotaList.map((a) => (
+                    <tr key={a.id}>
+                      <td className="py-2 pr-4 text-gray-900 dark:text-white">{a.nama}</td>
+                      <td className="py-2 pr-4 text-gray-600 dark:text-gray-400">{a.status_hubungan || "-"}</td>
+                      <td className="py-2 pr-4 text-gray-600 dark:text-gray-400">{a.no_telp || "-"}</td>
+                      <td className="py-2">
+                        <div className="flex gap-1 justify-end">
+                          <button
+                            onClick={() => openAnggotaEdit(a)}
+                            className="p-1 rounded hover:bg-white/30 dark:hover:bg-white/5 transition-colors"
+                            title="Edit"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingAnggota(a)}
+                            className="p-1 rounded hover:bg-rose-500/10 transition-colors"
+                            title="Hapus"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* ========== Modal: Anggota Form (Create/Edit) ========== */}
+      <Modal
+        open={anggotaFormOpen}
+        onClose={() => setAnggotaFormOpen(false)}
+        title={editingAnggota ? "Edit Anggota" : "Tambah Anggota"}
+        size="sm"
+      >
+        <div className="space-y-4">
+          {anggotaFormError && (
+            <div className="bg-rose-500/10 text-rose-700 dark:text-rose-400 text-sm p-3 rounded-xl border border-rose-500/20">
+              {anggotaFormError}
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nama <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={anggotaForm.nama}
+              onChange={(e) => setAnggotaForm({ ...anggotaForm, nama: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Status Hubungan
+            </label>
+            <input
+              type="text"
+              value={anggotaForm.status_hubungan}
+              onChange={(e) => setAnggotaForm({ ...anggotaForm, status_hubungan: e.target.value })}
+              placeholder="Istri / Anak / Ponakan / dll"
+              className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              No. Telp
+            </label>
+            <input
+              type="text"
+              value={anggotaForm.no_telp}
+              onChange={(e) => setAnggotaForm({ ...anggotaForm, no_telp: e.target.value })}
+              placeholder="08xxxxxxxxxx"
+              className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-white/20 dark:border-white/10">
+            <Button variant="outline" onClick={() => setAnggotaFormOpen(false)}>Batal</Button>
+            <Button onClick={handleAnggotaSave} loading={anggotaFormSaving}>Simpan</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ========== Modal: Hapus Anggota ========== */}
+      <Modal
+        open={!!deletingAnggota}
+        onClose={() => setDeletingAnggota(null)}
+        title="Hapus Anggota"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="bg-rose-500/10 rounded-xl border border-rose-500/20 p-4">
+            <p className="text-sm text-rose-700 dark:text-rose-400">
+              Hapus <strong>{deletingAnggota?.nama}</strong> dari daftar anggota keluarga?
+            </p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeletingAnggota(null)}>Batal</Button>
+            <Button variant="danger" onClick={handleAnggotaDelete} loading={anggotaDeleting}>Hapus</Button>
           </div>
         </div>
       </Modal>

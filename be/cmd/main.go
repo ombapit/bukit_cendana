@@ -49,6 +49,7 @@ func main() {
 		&models.ActivityLog{},
 		&models.IPLPaymentReq{},
 		&models.PenerimaQurban{},
+		&models.AnggotaKeluarga{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -71,6 +72,7 @@ func main() {
 	pengumumanRepo := repositories.NewPengumumanRepository(db)
 	qurbanRepo := repositories.NewQurbanRepository(db)
 	penerimaQurbanRepo := repositories.NewPenerimaQurbanRepository(db)
+	anggotaKeluargaRepo := repositories.NewAnggotaKeluargaRepository(db)
 	activityLogRepo := repositories.NewActivityLogRepository(db)
 
 	// Initialize services
@@ -87,6 +89,7 @@ func main() {
 	pengumumanService := services.NewPengumumanService(pengumumanRepo)
 	qurbanService := services.NewQurbanService(qurbanRepo)
 	penerimaQurbanService := services.NewPenerimaQurbanService(penerimaQurbanRepo)
+	anggotaKeluargaService := services.NewAnggotaKeluargaService(anggotaKeluargaRepo)
 	activityLogService := services.NewActivityLogService(activityLogRepo)
 
 	// Generate QR codes for existing warga that don't have one yet
@@ -99,6 +102,7 @@ func main() {
 	permHandler := handlers.NewPermissionHandler(permService)
 	menuHandler := handlers.NewMenuHandler(menuService, authService)
 	wargaHandler := handlers.NewWargaHandler(wargaService)
+	anggotaKeluargaHandler := handlers.NewAnggotaKeluargaHandler(anggotaKeluargaService)
 	iplHandler := handlers.NewIPLHandler(iplService)
 	iplPaymentHandler := handlers.NewIPLPaymentHandler(iplPaymentService)
 	financeHandler := handlers.NewFinanceHandler(financeService)
@@ -127,7 +131,7 @@ func main() {
 	})
 
 	// Setup routes
-	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, iplHandler, iplPaymentHandler, financeHandler, pengumumanHandler, qurbanHandler, penerimaQurbanHandler, activityLogHandler, authService)
+	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, anggotaKeluargaHandler, iplHandler, iplPaymentHandler, financeHandler, pengumumanHandler, qurbanHandler, penerimaQurbanHandler, activityLogHandler, authService)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.AppPort)

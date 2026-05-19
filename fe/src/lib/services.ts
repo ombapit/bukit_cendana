@@ -23,6 +23,7 @@ import type {
   WargaResponse,
   CreateWargaRequest,
   UpdateWargaRequest,
+  AnggotaKeluarga,
   IPL,
   PengambilanQurban,
   PenerimaQurban,
@@ -145,6 +146,21 @@ export const wargaService = {
 
   delete: (id: string) =>
     api.delete<APIResponse>(`/warga/${id}`),
+};
+
+// ============ Anggota Keluarga ============
+export const anggotaKeluargaService = {
+  getByWarga: (wargaId: string) =>
+    api.get<APIResponse<AnggotaKeluarga[]>>(`/warga/${wargaId}/anggota`),
+
+  create: (wargaId: string, data: { nama: string; status_hubungan?: string; no_telp?: string }) =>
+    api.post<APIResponse<AnggotaKeluarga>>(`/warga/${wargaId}/anggota`, data),
+
+  update: (id: string, data: { nama?: string; status_hubungan?: string; no_telp?: string }) =>
+    api.put<APIResponse<AnggotaKeluarga>>(`/anggota-keluarga/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<APIResponse>(`/anggota-keluarga/${id}`),
 };
 
 // ============ Finance ============

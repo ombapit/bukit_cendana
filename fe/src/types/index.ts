@@ -198,6 +198,16 @@ export interface WargaWithLastPayment {
   last_payment: string;
 }
 
+export interface AnggotaKeluarga {
+  id: string;
+  warga_id: string;
+  nama: string;
+  status_hubungan: string;
+  no_telp: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Finance {
   id: string;
   nama_transaksi: string;
