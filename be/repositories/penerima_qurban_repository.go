@@ -19,15 +19,24 @@ func (r *PenerimaQurbanRepository) FindAll(page, limit int, search string) ([]mo
 	var results []models.PenerimaQurban
 	var total int64
 
-	q := r.db.Model(&models.PenerimaQurban{})
+	countQ := r.db.Model(&models.PenerimaQurban{})
+	findQ := r.db.Model(&models.PenerimaQurban{})
 	if search != "" {
-		q = q.Where("LOWER(nama) LIKE '%' || LOWER(?) || '%' OR LOWER(blok) LIKE '%' || LOWER(?) || '%'", search, search)
+		where := "LOWER(nama) LIKE '%' || LOWER(?) || '%' OR LOWER(blok) LIKE '%' || LOWER(?) || '%'"
+		countQ = countQ.Where(where, search, search)
+		findQ = findQ.Where(where, search, search)
 	}
-	q.Count(&total)
+	countQ.Count(&total)
 
 	offset := (page - 1) * limit
-	err := q.Order("blok ASC, nama ASC").Limit(limit).Offset(offset).Find(&results).Error
+	err := findQ.Order("blok ASC, nama ASC").Limit(limit).Offset(offset).Find(&results).Error
 	return results, total, err
+}
+
+func (r *PenerimaQurbanRepository) UpdateQRCode(id, qrPath string) error {
+	return r.db.Model(&models.PenerimaQurban{}).
+		Where("id = ?", id).
+		Update("qr_code", qrPath).Error
 }
 
 func (r *PenerimaQurbanRepository) FindByID(id uuid.UUID) (*models.PenerimaQurban, error) {

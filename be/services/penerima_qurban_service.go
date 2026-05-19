@@ -2,9 +2,11 @@ package services
 
 import (
 	"errors"
+	"log"
 
 	"247-golang-api/models"
 	"247-golang-api/repositories"
+	"247-golang-api/utils"
 
 	"github.com/google/uuid"
 )
@@ -35,7 +37,17 @@ func (s *PenerimaQurbanService) Create(req models.CreatePenerimaQurbanRequest) (
 	if err := s.repo.Create(p); err != nil {
 		return nil, errors.New("gagal menyimpan data")
 	}
-	return p, nil
+
+	id := p.ID.String()
+	qrPath, err := utils.GenerateWargaQR(id, p.Nama, p.Blok)
+	if err != nil {
+		log.Printf("[WARN] Failed to generate QR for penerima_qurban %s: %v", id, err)
+	} else {
+		_ = s.repo.UpdateQRCode(id, qrPath)
+		p.QRCode = qrPath
+	}
+
+	return s.repo.FindByID(p.ID)
 }
 
 func (s *PenerimaQurbanService) Update(id uuid.UUID, req models.UpdatePenerimaQurbanRequest) (*models.PenerimaQurban, error) {
@@ -43,12 +55,24 @@ func (s *PenerimaQurbanService) Update(id uuid.UUID, req models.UpdatePenerimaQu
 	if err != nil {
 		return nil, errors.New("gagal memperbarui data")
 	}
-	return p, nil
+
+	idStr := id.String()
+	utils.DeleteWargaQR(idStr)
+	qrPath, err := utils.GenerateWargaQR(idStr, p.Nama, p.Blok)
+	if err != nil {
+		log.Printf("[WARN] Failed to regenerate QR for penerima_qurban %s: %v", idStr, err)
+	} else {
+		_ = s.repo.UpdateQRCode(idStr, qrPath)
+	}
+
+	return s.repo.FindByID(id)
 }
 
 func (s *PenerimaQurbanService) Delete(id uuid.UUID) error {
-	if _, err := s.repo.FindByID(id); err != nil {
+	p, err := s.repo.FindByID(id)
+	if err != nil {
 		return errors.New("data tidak ditemukan")
 	}
+	utils.DeleteWargaQR(p.ID.String())
 	return s.repo.Delete(id)
 }
