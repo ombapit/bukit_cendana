@@ -10,13 +10,16 @@ import type { PenerimaQurban } from "@/types";
 import { Plus, Pencil, Printer, FileDown, Trash2, Search, Loader2 } from "lucide-react";
 import ExcelJS from "exceljs";
 
-async function exportPenerimaXLS(judul: string, filename: string, rows: PenerimaQurban[]) {
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet(judul);
+function blokPrefix(blok: string) {
+  return (blok || "").split("/")[0].trim();
+}
 
+function addBlokSheet(wb: ExcelJS.Workbook, judulBase: string, blok: string, rows: PenerimaQurban[]) {
   const COLS = 4;
+  const judul = `${judulBase} Blok ${blok}`;
+  const ws = wb.addWorksheet(blok);
 
-  // Title row
+  // Title
   ws.mergeCells(1, 1, 1, COLS);
   const titleCell = ws.getCell("A1");
   titleCell.value = judul;
@@ -27,7 +30,7 @@ async function exportPenerimaXLS(judul: string, filename: string, rows: Penerima
   // Blank separator
   ws.addRow([]);
 
-  // Header row
+  // Header
   const headerRow = ws.addRow(["No", "Nama", "Blok", "Status"]);
   headerRow.height = 18;
   headerRow.eachCell((cell) => {
@@ -35,20 +38,13 @@ async function exportPenerimaXLS(judul: string, filename: string, rows: Penerima
     cell.alignment = { horizontal: "center", vertical: "middle" };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
     cell.border = {
-      top:    { style: "thin" },
-      left:   { style: "thin" },
-      bottom: { style: "thin" },
-      right:  { style: "thin" },
+      top: { style: "thin" }, left: { style: "thin" },
+      bottom: { style: "thin" }, right: { style: "thin" },
     };
   });
 
-  // Data rows
-  const sorted = [...rows].sort(
-    (a, b) =>
-      a.blok.localeCompare(b.blok, "id", { numeric: true }) ||
-      a.nama.localeCompare(b.nama, "id")
-  );
-  sorted.forEach((r, i) => {
+  // Data
+  rows.forEach((r, i) => {
     const row = ws.addRow([i + 1, r.nama, r.blok, ""]);
     row.height = 16;
     row.eachCell({ includeEmpty: true }, (cell, col) => {
@@ -57,21 +53,17 @@ async function exportPenerimaXLS(judul: string, filename: string, rows: Penerima
         vertical: "middle",
       };
       cell.border = {
-        top:    { style: "thin" },
-        left:   { style: "thin" },
-        bottom: { style: "thin" },
-        right:  { style: "thin" },
+        top: { style: "thin" }, left: { style: "thin" },
+        bottom: { style: "thin" }, right: { style: "thin" },
       };
     });
   });
 
-  // Column widths
   ws.getColumn(1).width = 6;
   ws.getColumn(2).width = 32;
   ws.getColumn(3).width = 14;
   ws.getColumn(4).width = 22;
 
-  // Print setup: portrait, fit to 1 page wide
   ws.pageSetup = {
     orientation: "portrait",
     fitToPage: true,
@@ -79,6 +71,29 @@ async function exportPenerimaXLS(judul: string, filename: string, rows: Penerima
     fitToHeight: 0,
     margins: { left: 0.5, right: 0.5, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 },
   };
+}
+
+async function exportPenerimaXLS(judulBase: string, filename: string, rows: PenerimaQurban[]) {
+  const wb = new ExcelJS.Workbook();
+
+  const sorted = [...rows].sort(
+    (a, b) =>
+      blokPrefix(a.blok).localeCompare(blokPrefix(b.blok), "id", { numeric: true }) ||
+      a.blok.localeCompare(b.blok, "id", { numeric: true }) ||
+      a.nama.localeCompare(b.nama, "id")
+  );
+
+  // Group by blok prefix
+  const groups = new Map<string, PenerimaQurban[]>();
+  for (const r of sorted) {
+    const key = blokPrefix(r.blok);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(r);
+  }
+
+  for (const [blok, members] of groups) {
+    addBlokSheet(wb, judulBase, blok, members);
+  }
 
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
