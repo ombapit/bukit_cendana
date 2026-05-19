@@ -150,6 +150,9 @@ export const wargaService = {
 
 // ============ Anggota Keluarga ============
 export const anggotaKeluargaService = {
+  getAll: () =>
+    api.get<APIResponse<AnggotaKeluarga[]>>(`/anggota-keluarga`),
+
   getByWarga: (wargaId: string) =>
     api.get<APIResponse<AnggotaKeluarga[]>>(`/warga/${wargaId}/anggota`),
 

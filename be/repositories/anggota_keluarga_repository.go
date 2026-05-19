@@ -15,6 +15,12 @@ func NewAnggotaKeluargaRepository(db *gorm.DB) *AnggotaKeluargaRepository {
 	return &AnggotaKeluargaRepository{db: db}
 }
 
+func (r *AnggotaKeluargaRepository) FindAll() ([]models.AnggotaKeluarga, error) {
+	var results []models.AnggotaKeluarga
+	err := r.db.Order("warga_id ASC, status_hubungan ASC, nama ASC").Find(&results).Error
+	return results, err
+}
+
 func (r *AnggotaKeluargaRepository) FindByWargaID(wargaID uuid.UUID) ([]models.AnggotaKeluarga, error) {
 	var results []models.AnggotaKeluarga
 	err := r.db.Where("warga_id = ?", wargaID).Order("status_hubungan ASC, nama ASC").Find(&results).Error

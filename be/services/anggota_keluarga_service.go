@@ -17,6 +17,10 @@ func NewAnggotaKeluargaService(repo *repositories.AnggotaKeluargaRepository) *An
 	return &AnggotaKeluargaService{repo: repo}
 }
 
+func (s *AnggotaKeluargaService) FindAll() ([]models.AnggotaKeluarga, error) {
+	return s.repo.FindAll()
+}
+
 func (s *AnggotaKeluargaService) FindByWargaID(wargaID uuid.UUID) ([]models.AnggotaKeluarga, error) {
 	return s.repo.FindByWargaID(wargaID)
 }
