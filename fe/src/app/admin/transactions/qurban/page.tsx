@@ -175,7 +175,11 @@ export default function QurbanPage() {
 
   // Update modal
   const [updateOpen, setUpdateOpen] = useState(false);
-  const [updatingID, setUpdatingID] = useState<string | null>(null);
+  const [selectedUpdatePenerimaID, setSelectedUpdatePenerimaID] = useState("");
+  const [updateError, setUpdateError] = useState("");
+  const [updating, setUpdating] = useState(false);
+  const [updateScannerOpen, setUpdateScannerOpen] = useState(false);
+  const [updateScanFeedback, setUpdateScanFeedback] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
 
   // Delete modal
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -281,17 +285,70 @@ export default function QurbanPage() {
   }, [allWarga, records]);
 
   // ── Update status ───────────────────────────────────────────────────────
-  const handleUpdateStatus = async (id: string) => {
-    setUpdatingID(id);
+  const openUpdate = () => {
+    setSelectedUpdatePenerimaID("");
+    setUpdateError("");
+    setUpdateScanFeedback(null);
+    setUpdateOpen(true);
+  };
+
+  const handleUpdate = async () => {
+    const record = kuponRecords.find((r) => r.penerima_qurban_id === selectedUpdatePenerimaID);
+    if (!record) {
+      setUpdateError("Pilih warga terlebih dahulu");
+      return;
+    }
+    setUpdating(true);
+    setUpdateError("");
     try {
-      await qurbanService.update(id, { status: "Sudah Diambil" });
+      await qurbanService.update(record.id, { status: "Sudah Diambil" });
+      setUpdateOpen(false);
       showSuccess("Status berhasil diperbarui");
       fetchRecords();
-    } catch {
-      // leave modal open so user can retry
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Gagal memperbarui status";
+      setUpdateError(msg);
     }
-    setUpdatingID(null);
+    setUpdating(false);
   };
+
+  const handleUpdateScanResult = useCallback((text: string) => {
+    setUpdateScannerOpen(false);
+    setUpdateScanFeedback(null);
+
+    let parsed: { app?: string; id?: string; nama?: string; blok?: string } = {};
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      setUpdateScanFeedback({ type: "err", msg: "QR tidak dikenali — bukan format Bukit Cendana" });
+      return;
+    }
+
+    if (parsed.app !== "bukitcendana" || !parsed.id) {
+      setUpdateScanFeedback({ type: "err", msg: "QR bukan dari aplikasi Bukit Cendana" });
+      return;
+    }
+
+    const found = records.find(
+      (r) => r.penerima_qurban_id === parsed.id && r.status === "Kupon Sudah Dibagikan"
+    );
+    if (!found) {
+      const alreadyDone = records.some(
+        (r) => r.penerima_qurban_id === parsed.id && r.status === "Sudah Diambil"
+      );
+      if (alreadyDone) {
+        setUpdateScanFeedback({ type: "err", msg: `${parsed.nama} (${parsed.blok}) sudah diambil` });
+      } else {
+        setUpdateScanFeedback({ type: "err", msg: "Warga tidak ada dalam daftar kupon" });
+      }
+      return;
+    }
+
+    setSelectedUpdatePenerimaID(parsed.id!);
+    setUpdateScanFeedback({ type: "ok", msg: `QR terbaca: ${parsed.nama} — ${parsed.blok}` });
+  }, [records]);
 
   // ── Delete ──────────────────────────────────────────────────────────────
   const openDelete = (r: PengambilanQurban) => {
@@ -414,7 +471,7 @@ export default function QurbanPage() {
             <FileDown className="w-4 h-4 mr-2" />
             Export XLS
           </Button>
-          <Button variant="outline" onClick={() => setUpdateOpen(true)} disabled={kuponRecords.length === 0}>
+          <Button variant="outline" onClick={openUpdate} disabled={kuponRecords.length === 0}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Update
           </Button>
@@ -513,35 +570,62 @@ export default function QurbanPage() {
 
       {/* ========== Modal: Update Status ========== */}
       <Modal open={updateOpen} onClose={() => setUpdateOpen(false)} title="Update Status Pengambilan" size="md">
-        <div className="space-y-3">
-          {kuponRecords.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
-              Tidak ada warga dengan status "Kupon Sudah Dibagikan".
-            </p>
-          ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {kuponRecords.map((r) => (
-                <div key={r.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10">
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{r.nama_warga}</p>
-                    <span className="inline-block mt-0.5 px-2 py-0.5 text-xs rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
-                      {r.blok_warga}
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleUpdateStatus(r.id)}
-                    loading={updatingID === r.id}
-                    disabled={updatingID !== null}
-                  >
-                    Sudah Diambil
-                  </Button>
-                </div>
-              ))}
+        <div className="space-y-4">
+          {updateError && (
+            <div className="bg-rose-500/10 text-rose-700 dark:text-rose-400 text-sm p-3 rounded-xl border border-rose-500/20">
+              {updateError}
             </div>
           )}
-          <div className="flex justify-end pt-2 border-t border-white/20 dark:border-white/10">
-            <Button variant="outline" onClick={() => setUpdateOpen(false)}>Tutup</Button>
+
+          {updateScanFeedback && (
+            <div className={`text-sm p-3 rounded-xl border ${
+              updateScanFeedback.type === "ok"
+                ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
+                : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+            }`}>
+              {updateScanFeedback.msg}
+            </div>
+          )}
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Warga <span className="text-red-500">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => { setUpdateScanFeedback(null); setUpdateScannerOpen(true); }}
+                className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                <ScanLine className="w-3.5 h-3.5" />
+                Scan QR
+              </button>
+            </div>
+            <WargaCombobox
+              warga={kuponRecords.map((r) => ({
+                id: r.penerima_qurban_id,
+                nama: r.nama_warga,
+                blok: r.blok_warga,
+                no_telp: "",
+                kondisi_rumah: "",
+                created_at: "",
+                updated_at: "",
+              } as PenerimaQurban))}
+              selectedID={selectedUpdatePenerimaID}
+              onSelect={(id) => setSelectedUpdatePenerimaID(id)}
+            />
+            {kuponRecords.length === 0 && (
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                Semua warga sudah berstatus Sudah Diambil.
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-white/20 dark:border-white/10">
+            <Button variant="outline" onClick={() => setUpdateOpen(false)}>Batal</Button>
+            <Button onClick={handleUpdate} loading={updating} disabled={!selectedUpdatePenerimaID}>
+              Sudah Diambil
+            </Button>
           </div>
         </div>
       </Modal>
@@ -631,6 +715,12 @@ export default function QurbanPage() {
         <QRScanner
           onResult={handleScanResult}
           onClose={() => setScannerOpen(false)}
+        />
+      )}
+      {updateScannerOpen && (
+        <QRScanner
+          onResult={handleUpdateScanResult}
+          onClose={() => setUpdateScannerOpen(false)}
         />
       )}
     </div>
