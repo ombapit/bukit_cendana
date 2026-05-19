@@ -130,10 +130,7 @@ export default function WargaAdminPage() {
     if (filterKondisi && (w.kondisi_rumah || "") !== filterKondisi) return false;
     if (search) {
       const s = search.toLowerCase();
-      return (
-        w.nama.toLowerCase().includes(s) ||
-        (w.no_telp || "").includes(s)
-      );
+      return w.nama.toLowerCase().includes(s) || w.blok.toLowerCase().includes(s);
     }
     return true;
   });
@@ -175,7 +172,7 @@ export default function WargaAdminPage() {
     setEditForm({
       nama: w.nama,
       blok: w.blok,
-      no_telp: w.no_telp || "",
+      no_telp: "",
       iuran: String(w.iuran),
       kondisi_rumah: w.kondisi_rumah || "",
     });
@@ -335,15 +332,6 @@ export default function WargaAdminPage() {
           </span>
         );
       },
-    },
-    {
-      key: "no_telp",
-      header: "No. Telp",
-      render: (w: WargaWithLastPayment) => (
-        <span className="text-gray-600 dark:text-gray-400 text-sm">
-          {w.no_telp || "-"}
-        </span>
-      ),
     },
     {
       key: "iuran",
@@ -521,7 +509,6 @@ export default function WargaAdminPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-semibold text-gray-900 dark:text-white truncate">{w.nama}</p>
-                          {w.no_telp && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{w.no_telp}</p>}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <button onClick={() => openAnggota(w)} className="p-1.5 rounded-lg hover:bg-blue-500/10 transition-colors" title="Anggota Keluarga">
