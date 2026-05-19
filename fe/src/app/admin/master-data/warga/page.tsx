@@ -413,17 +413,20 @@ export default function WargaAdminPage() {
       const allAnggota = anggotaRes.data?.data || [];
       const wargaMap = new Map(wargas.map((w) => [String(w.id), w]));
 
-      const anggotaRows = allAnggota.map((a, i) => {
-        const kk = wargaMap.get(a.warga_id);
-        return {
-          no: i + 1,
-          nama_kk: kk?.nama || "-",
-          blok: kk?.blok || "-",
-          nama: a.nama,
-          status_hubungan: a.status_hubungan || "-",
-          no_telp: a.no_telp || "-",
-        };
-      });
+      const anggotaRows = allAnggota
+        .map((a) => {
+          const kk = wargaMap.get(a.warga_id);
+          return {
+            blok_sort: kk?.blok || "",
+            nama_kk: kk?.nama || "-",
+            blok: kk?.blok || "-",
+            nama: a.nama,
+            status_hubungan: a.status_hubungan || "-",
+            no_telp: a.no_telp || "-",
+          };
+        })
+        .sort((a, b) => a.blok_sort.localeCompare(b.blok_sort, "id", { numeric: true, sensitivity: "base" }))
+        .map(({ blok_sort: _b, ...rest }, i) => ({ no: i + 1, ...rest }));
 
       await exportWargaXLS(
         "Data_Warga_Bukit_Cendana",
