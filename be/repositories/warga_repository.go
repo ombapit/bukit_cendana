@@ -38,7 +38,7 @@ func (r *WargaRepository) FindAll(page, limit int) ([]models.Warga, int64, error
 	r.db.Model(&models.Warga{}).Count(&total)
 
 	offset := (page - 1) * limit
-	err := r.db.Offset(offset).Limit(limit).Order("nama ASC").Find(&warga).Error
+	err := r.db.Offset(offset).Limit(limit).Order("blok ASC, nama ASC").Find(&warga).Error
 	return warga, total, err
 }
 
@@ -65,7 +65,7 @@ func (r *WargaRepository) FindAllWithLastPayment(page, limit int) ([]models.Warg
 				WHERE t.warga_id = w.id
 			), '') as last_payment
 		FROM warga w
-		ORDER BY w.nama ASC
+		ORDER BY w.blok ASC, w.nama ASC
 		LIMIT ? OFFSET ?
 	`, limit, offset).Scan(&results).Error
 
@@ -101,7 +101,7 @@ func (r *WargaRepository) FindByTunggakan(page, limit, bulan int) ([]models.Warg
 		)
 		SELECT * FROM warga_with_payment
 		WHERE last_payment < '%s' OR last_payment = ''
-		ORDER BY nama ASC
+		ORDER BY blok ASC, nama ASC
 		LIMIT %d OFFSET %d
 	`, bulanThreshold, limit, offset)).Scan(&results).Error
 
