@@ -571,7 +571,7 @@ export default function QurbanPage() {
           </div>
 
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
-            {filterBlok
+            {(filterBlok || filterStatus)
               ? `Menampilkan ${displayedRecords.length} dari ${total} data tercatat`
               : `Total ${total} data tercatat`}
           </p>
