@@ -158,6 +158,7 @@ export default function QurbanPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterBlok, setFilterBlok] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [total, setTotal] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -374,13 +375,13 @@ export default function QurbanPage() {
   const blokOptions = Array.from(new Set(records.map((r) => blokPrefix(r.blok_warga)).filter(Boolean)))
     .sort((a, b) => a.localeCompare(b, "id", { numeric: true }));
 
-  const displayedRecords = (filterBlok
-    ? records.filter((r) => blokPrefix(r.blok_warga) === filterBlok)
-    : records
-  ).sort((a, b) =>
-    a.blok_warga.localeCompare(b.blok_warga, "id", { numeric: true, sensitivity: "base" }) ||
-    a.nama_warga.localeCompare(b.nama_warga, "id")
-  );
+  const displayedRecords = records
+    .filter((r) => !filterBlok || blokPrefix(r.blok_warga) === filterBlok)
+    .filter((r) => !filterStatus || r.status === filterStatus)
+    .sort((a, b) =>
+      a.blok_warga.localeCompare(b.blok_warga, "id", { numeric: true, sensitivity: "base" }) ||
+      a.nama_warga.localeCompare(b.nama_warga, "id")
+    );
 
   const kuponRecords = records.filter((r) => r.status === "Kupon Sudah Dibagikan")
     .sort((a, b) =>
@@ -509,6 +510,15 @@ export default function QurbanPage() {
           {blokOptions.map((b) => (
             <option key={b} value={b}>{b}</option>
           ))}
+        </select>
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 dark:bg-white/5 dark:text-slate-100 sm:w-52"
+        >
+          <option value="">Semua Status</option>
+          <option value="Kupon Sudah Dibagikan">Kupon Sudah Dibagikan</option>
+          <option value="Sudah Diambil">Sudah Diambil</option>
         </select>
       </div>
 
@@ -726,3 +736,4 @@ export default function QurbanPage() {
     </div>
   );
 }
+
