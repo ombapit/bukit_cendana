@@ -55,7 +55,7 @@ func (r *FinanceRepository) FindAll(page, limit int, search, dateFrom, dateTo st
 	countQ.Count(&total)
 
 	offset := (page - 1) * limit
-	err := dataQ.Order("created_at DESC").Offset(offset).Limit(limit).Find(&results).Error
+	err := dataQ.Order("tanggal DESC, created_at DESC").Offset(offset).Limit(limit).Find(&results).Error
 	return results, total, err
 }
 
