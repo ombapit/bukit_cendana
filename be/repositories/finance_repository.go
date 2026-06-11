@@ -61,6 +61,8 @@ func (r *FinanceRepository) FindAll(page, limit int, search, dateFrom, dateTo st
 
 func (r *FinanceRepository) GetSummary(dateFrom, dateTo string) (*models.FinanceSummary, error) {
 	var summary models.FinanceSummary
+
+	// Pemasukan & pengeluaran: sesuai filter tanggal
 	q := r.db.Model(&models.Finance{})
 	if dateFrom != "" {
 		if t, err := time.Parse("2006-01-02", dateFrom); err == nil {
@@ -72,9 +74,27 @@ func (r *FinanceRepository) GetSummary(dateFrom, dateTo string) (*models.Finance
 			q = q.Where("tanggal < ?", t.AddDate(0, 0, 1))
 		}
 	}
-	err := q.Select("COALESCE(SUM(kredit),0) as total_kredit, COALESCE(SUM(debit),0) as total_debit, COALESCE(SUM(kredit)-SUM(debit),0) as saldo").
-		Scan(&summary).Error
-	return &summary, err
+	var periodResult struct {
+		TotalKredit float64
+		TotalDebit  float64
+	}
+	if err := q.Select("COALESCE(SUM(kredit),0) as total_kredit, COALESCE(SUM(debit),0) as total_debit").
+		Scan(&periodResult).Error; err != nil {
+		return nil, err
+	}
+	summary.TotalKredit = periodResult.TotalKredit
+	summary.TotalDebit = periodResult.TotalDebit
+
+	// Saldo: akumulatif semua transaksi (tidak difilter)
+	var saldoResult struct{ Saldo float64 }
+	if err := r.db.Model(&models.Finance{}).
+		Select("COALESCE(SUM(kredit)-SUM(debit),0) as saldo").
+		Scan(&saldoResult).Error; err != nil {
+		return nil, err
+	}
+	summary.Saldo = saldoResult.Saldo
+
+	return &summary, nil
 }
 
 func (r *FinanceRepository) Update(f *models.Finance) error {
