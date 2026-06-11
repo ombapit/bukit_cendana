@@ -105,6 +105,7 @@ export default function LaporanPage() {
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Total Pemasukan</p>
                 <p className="text-lg font-bold text-green-600 dark:text-green-400">{formatRp(summary.total_kredit)}</p>
+                {(dateFrom || dateTo) && <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">periode terpilih</p>}
               </div>
             </div>
             <div className="glass rounded-2xl p-5 flex items-center gap-4">
@@ -114,6 +115,7 @@ export default function LaporanPage() {
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Total Pengeluaran</p>
                 <p className="text-lg font-bold text-red-600 dark:text-red-400">{formatRp(summary.total_debit)}</p>
+                {(dateFrom || dateTo) && <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">periode terpilih</p>}
               </div>
             </div>
             <div className="glass rounded-2xl p-5 flex items-center gap-4">
@@ -125,6 +127,7 @@ export default function LaporanPage() {
                 <p className={`text-lg font-bold ${summary.saldo >= 0 ? "text-blue-600 dark:text-blue-400" : "text-rose-600 dark:text-rose-400"}`}>
                   {formatRp(summary.saldo)}
                 </p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">keseluruhan</p>
               </div>
             </div>
           </div>

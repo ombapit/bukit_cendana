@@ -350,6 +350,7 @@ export default function FinancePage() {
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Total Pemasukan</p>
               <p className="text-sm font-bold text-green-600 dark:text-green-400">{formatRp(summary.total_kredit)}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">periode terpilih</p>
             </div>
           </div>
           <div className="glass rounded-2xl p-4 flex items-center gap-3">
@@ -359,6 +360,7 @@ export default function FinancePage() {
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Total Pengeluaran</p>
               <p className="text-sm font-bold text-red-600 dark:text-red-400">{formatRp(summary.total_debit)}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">periode terpilih</p>
             </div>
           </div>
           <div className="glass rounded-2xl p-4 flex items-center gap-3">
@@ -370,6 +372,7 @@ export default function FinancePage() {
               <p className={`text-sm font-bold ${summary.saldo >= 0 ? "text-blue-600 dark:text-blue-400" : "text-rose-600 dark:text-rose-400"}`}>
                 {formatRp(summary.saldo)}
               </p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">keseluruhan</p>
             </div>
           </div>
         </div>
