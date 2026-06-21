@@ -11,7 +11,7 @@ services:
       dockerfile: Dockerfile
     container_name: bukitcendana-be
     ports:
-      - "8082:8080"
+      - "127.0.0.1:8082:8080"
     env_file:
       - be/.env
     depends_on:
@@ -23,7 +23,7 @@ services:
       - ./be/uploads:/app/uploads
     restart: unless-stopped
     networks:
-      - shared-net
+      - bowo
       - bukitcendana-network
 
   app:
@@ -34,7 +34,7 @@ services:
         NEXT_PUBLIC_API_URL: https://bukitcendana.my.id/api/v1
     container_name: bukitcendana-fe
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3001:3000"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
@@ -65,7 +65,7 @@ services:
     # ports:
     #   - "6379:6379"
     volumes:
-      - redis_data:/data
+      - /data/redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -80,7 +80,7 @@ volumes:
   redis_data:
 
 networks:
-  shared-net:
+  bowo:
     external: true
   bukitcendana-network:
     driver: bridge
