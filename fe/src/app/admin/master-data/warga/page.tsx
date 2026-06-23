@@ -411,9 +411,13 @@ export default function WargaAdminPage() {
     try {
       const anggotaRes = await anggotaKeluargaService.getAll();
       const allAnggota = anggotaRes.data?.data || [];
-      const wargaMap = new Map(wargas.map((w) => [String(w.id), w]));
+
+      // Gunakan data yang sudah difilter
+      const filteredWargaIds = new Set(filtered.map((w) => String(w.id)));
+      const wargaMap = new Map(filtered.map((w) => [String(w.id), w]));
 
       const anggotaRows = allAnggota
+        .filter((a) => filteredWargaIds.has(a.warga_id)) // Hanya anggota dari warga yang terfilter
         .map((a) => {
           const kk = wargaMap.get(a.warga_id);
           return {
@@ -430,7 +434,7 @@ export default function WargaAdminPage() {
 
       await exportWargaXLS(
         "Data_Warga_Bukit_Cendana",
-        wargas.map((w, i) => ({
+        filtered.map((w, i) => ({ // Gunakan filtered bukan wargas
           no: i + 1,
           nama: w.nama,
           blok: w.blok,
