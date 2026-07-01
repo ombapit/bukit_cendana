@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { wargaService, anggotaKeluargaService } from "@/lib/services";
-import { exportWargaXLS } from "@/lib/export";
+import { exportWargaXLS, exportWargaPDF } from "@/lib/export";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
@@ -56,6 +56,7 @@ export default function WargaAdminPage() {
   const [search, setSearch] = useState("");
   const [filterBlok, setFilterBlok] = useState("");
   const [filterKondisi, setFilterKondisi] = useState("");
+  const [filterTanggal, setFilterTanggal] = useState("");
   const [total, setTotal] = useState(0);
 
   const [successMsg, setSuccessMsg] = useState("");
@@ -405,6 +406,7 @@ export default function WargaAdminPage() {
   ];
 
   const [exporting, setExporting] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const handleExport = async () => {
     setExporting(true);
@@ -449,6 +451,23 @@ export default function WargaAdminPage() {
     setExporting(false);
   };
 
+  const handleExportPDF = async () => {
+    setExportingPdf(true);
+    try {
+      const customDate = filterTanggal ? new Date(filterTanggal) : undefined;
+      await exportWargaPDF(
+        filtered.map((w, i) => ({
+          no: i + 1,
+          nama: w.nama,
+          blok: w.blok,
+          last_payment_raw: w.last_payment,
+        })),
+        customDate
+      );
+    } catch { /* silent */ }
+    setExportingPdf(false);
+  };
+
   return (
     <div>
       {/* Header */}
@@ -463,6 +482,10 @@ export default function WargaAdminPage() {
           <Button variant="outline" onClick={handleExport} loading={exporting} disabled={wargas.length === 0}>
             <FileDown className="w-4 h-4 mr-2" />
             Export XLS
+          </Button>
+          <Button variant="outline" onClick={handleExportPDF} loading={exportingPdf} disabled={wargas.length === 0}>
+            <FileDown className="w-4 h-4 mr-2" />
+            Export PDF
           </Button>
           <Button onClick={openCreate}>
             <Plus className="w-4 h-4 mr-2" />
@@ -509,6 +532,13 @@ export default function WargaAdminPage() {
             <option key={k} value={k}>{k}</option>
           ))}
         </select>
+        <input
+          type="date"
+          value={filterTanggal}
+          onChange={(e) => setFilterTanggal(e.target.value)}
+          className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 dark:bg-white/5 dark:text-slate-100 sm:w-40"
+          title="Tanggal Periode"
+        />
       </div>
 
       {/* Table */}
