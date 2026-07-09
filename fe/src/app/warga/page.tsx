@@ -82,13 +82,17 @@ export default function WargaPage() {
   const [blokFilter, setBlokFilter] = useState("");
   const [tunggakanFilter, setTunggakanFilter] = useState("");
   const [kondisiFilter, setKondisiFilter] = useState("");
+  const [totalWarga, setTotalWarga] = useState(0);
 
   const fetchWarga = useCallback(async () => {
     setLoading(true);
     try {
       const res = await wargaService.getAll(1, 1000, tunggakanFilter ? parseInt(tunggakanFilter) : undefined);
-      const data = (res as unknown as { data: { data: WargaWithLastPayment[] } }).data?.data;
-      setWarga(data || []);
+      const data = res.data?.data || [];
+      setWarga(data);
+      if (!tunggakanFilter) {
+        setTotalWarga(res.data?.meta?.total ?? data.length);
+      }
     } catch {
       setWarga([]);
     }
@@ -98,6 +102,24 @@ export default function WargaPage() {
   useEffect(() => {
     fetchWarga();
   }, [fetchWarga]);
+
+  useEffect(() => {
+    let active = true;
+
+    wargaService.getAll(1, 1)
+      .then((res) => {
+        if (!active) return;
+        setTotalWarga(res.data?.meta?.total ?? res.data?.data?.length ?? 0);
+      })
+      .catch(() => {
+        if (!active) return;
+        setTotalWarga((current) => current || 0);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const allBlocks = [...new Set(warga.map((w) => w.blok.split("/")[0].trim()))].sort();
 
@@ -302,7 +324,7 @@ export default function WargaPage() {
             </div>
 
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-              Menampilkan {filteredWarga.length} dari {warga.length} warga
+              Menampilkan {filteredWarga.length} dari {totalWarga || warga.length} warga
             </p>
           </>
         )}
