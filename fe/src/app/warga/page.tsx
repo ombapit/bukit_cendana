@@ -77,12 +77,12 @@ function getCardStyle(lastPayment: string) {
 export default function WargaPage() {
   const { t } = useLocale();
   const [warga, setWarga] = useState<WargaWithLastPayment[]>([]);
+  const [allWarga, setAllWarga] = useState<WargaWithLastPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [blokFilter, setBlokFilter] = useState("");
   const [tunggakanFilter, setTunggakanFilter] = useState("");
   const [kondisiFilter, setKondisiFilter] = useState("");
-  const [totalWarga, setTotalWarga] = useState(0);
 
   const fetchWarga = useCallback(async () => {
     setLoading(true);
@@ -91,7 +91,7 @@ export default function WargaPage() {
       const data = res.data?.data || [];
       setWarga(data);
       if (!tunggakanFilter) {
-        setTotalWarga(res.data?.meta?.total ?? data.length);
+        setAllWarga(data);
       }
     } catch {
       setWarga([]);
@@ -103,37 +103,25 @@ export default function WargaPage() {
     fetchWarga();
   }, [fetchWarga]);
 
-  useEffect(() => {
-    let active = true;
+  const allBlocksSource = allWarga.length > 0 ? allWarga : warga;
+  const allBlocks = [...new Set(allBlocksSource.map((w) => w.blok.split("/")[0].trim()))].sort();
 
-    wargaService.getAll(1, 1)
-      .then((res) => {
-        if (!active) return;
-        setTotalWarga(res.data?.meta?.total ?? res.data?.data?.length ?? 0);
-      })
-      .catch(() => {
-        if (!active) return;
-        setTotalWarga((current) => current || 0);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const allBlocks = [...new Set(warga.map((w) => w.blok.split("/")[0].trim()))].sort();
+  const matchesClientFilters = (w: WargaWithLastPayment) => {
+    const matchSearch =
+      !search ||
+      w.nama.toLowerCase().includes(search.toLowerCase()) ||
+      w.blok.toLowerCase().includes(search.toLowerCase());
+    const matchBlok = !blokFilter || w.blok.startsWith(blokFilter);
+    const matchKondisi = !kondisiFilter || (w.kondisi_rumah || "") === kondisiFilter;
+    return matchSearch && matchBlok && matchKondisi;
+  };
 
   const filteredWarga = warga
-    .filter((w) => {
-      const matchSearch =
-        !search ||
-        w.nama.toLowerCase().includes(search.toLowerCase()) ||
-        w.blok.toLowerCase().includes(search.toLowerCase());
-      const matchBlok = !blokFilter || w.blok.startsWith(blokFilter);
-      const matchKondisi = !kondisiFilter || (w.kondisi_rumah || "") === kondisiFilter;
-      return matchSearch && matchBlok && matchKondisi;
-    })
+    .filter(matchesClientFilters)
     .sort((a, b) => a.blok.localeCompare(b.blok, "id", { numeric: true, sensitivity: "base" }));
+
+  const summarySource = tunggakanFilter && allWarga.length > 0 ? allWarga : warga;
+  const summaryTotal = summarySource.filter(matchesClientFilters).length;
 
   const columns = [
     {
@@ -324,7 +312,7 @@ export default function WargaPage() {
             </div>
 
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-              Menampilkan {filteredWarga.length} dari {totalWarga || warga.length} warga
+              Menampilkan {filteredWarga.length} dari {summaryTotal || filteredWarga.length} warga
             </p>
           </>
         )}
