@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { financeService } from "@/lib/services";
 import { exportXLS } from "@/lib/export";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
@@ -44,6 +46,58 @@ function todayStr(): string {
 function firstOfMonthStr(): string {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
+}
+
+function currentMonthStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatDateOnly(year: number, monthNum: number, day: number): string {
+  return `${year}-${String(monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function monthToRange(month: string): { dateFrom: string; dateTo: string; label: string } {
+  const [year, monthNum] = month.split("-").map(Number);
+  const end = new Date(year, monthNum, 0);
+  const label = new Date(year, monthNum - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  return {
+    // Jangan pakai toISOString() di sini: timezone browser bisa menggeser tanggal
+    // (contoh WIB: 1 Juli menjadi 30 Juni UTC), sehingga saldo/penerimaan ikut salah.
+    dateFrom: formatDateOnly(year, monthNum, 1),
+    dateTo: formatDateOnly(year, monthNum, end.getDate()),
+    label,
+  };
+}
+
+function splitLines(text = ""): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function isRoutineExpense(r: Finance): boolean {
+  const text = `${r.nama_transaksi} ${r.deskripsi} ${r.kategori}`.toLowerCase();
+  return [
+    "gaji", "bpjs", "sampah", "satpam", "security", "kebersihan",
+    "listrik", "pln", "pdam", "posyandu", "dkm", "nasrani", "insentif", "fee ipl",
+  ].some((key) => text.includes(key));
+}
+
+async function getAllFinanceForRange(search: string, dateFrom: string, dateTo: string): Promise<Finance[]> {
+  const limit = 100;
+  let page = 1;
+  const all: Finance[] = [];
+  while (true) {
+    const res = await financeService.getAll(page, limit, search, dateFrom, dateTo);
+    const rows = res.data?.data || [];
+    all.push(...rows);
+    const totalPages = res.data?.meta?.total_pages || 1;
+    if (page >= totalPages || rows.length === 0) break;
+    page += 1;
+  }
+  return all;
 }
 
 const emptyForm = {
@@ -88,6 +142,8 @@ export default function FinancePage() {
   const [deleting, setDeleting] = useState(false);
 
   const [exporting, setExporting] = useState(false);
+  const [pdfMonth, setPdfMonth] = useState(currentMonthStr);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -97,8 +153,7 @@ export default function FinancePage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await financeService.getAll(1, 10000, debouncedSearch, dateFrom, dateTo);
-      const all = res.data?.data || [];
+      const all = await getAllFinanceForRange(debouncedSearch, dateFrom, dateTo);
       const suffix = dateFrom && dateTo ? `_${dateFrom}_sd_${dateTo}` : "";
       const rows = all.map((r, i) => ({
         "No": i + 1,
@@ -113,6 +168,181 @@ export default function FinancePage() {
       exportXLS(`Laporan_Keuangan_Bukit_Cendana${suffix}`, "Keuangan", rows);
     } catch { /* ignore */ }
     setExporting(false);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!pdfMonth) return;
+    setDownloadingPDF(true);
+    try {
+      const range = monthToRange(pdfMonth);
+      const [year, monthNum] = pdfMonth.split("-").map(Number);
+      const prevDate = new Date(year, monthNum - 1, 0);
+      const prevDateStr = formatDateOnly(prevDate.getFullYear(), prevDate.getMonth() + 1, prevDate.getDate());
+
+      const [beforeMonth, monthRows] = await Promise.all([
+        getAllFinanceForRange("", "", prevDateStr),
+        getAllFinanceForRange("", range.dateFrom, range.dateTo),
+      ]);
+
+      const pengeluaran = monthRows.filter((r) => r.debit > 0);
+      const saldoAwal = beforeMonth.reduce((sum, r) => sum + (r.kredit || 0) - (r.debit || 0), 0);
+      const totalPemasukan = monthRows.reduce((sum, r) => sum + (r.kredit || 0), 0);
+
+      type SummaryRow = { label: string; amount: number; routine: boolean };
+      const summaryMap = new Map<string, SummaryRow>();
+      const parseAmount = (line: string): number | null => {
+        const matches = line.match(/\d{1,3}(?:[.]\d{3})+|\d+/g);
+        if (!matches?.length) return null;
+        const raw = matches[matches.length - 1].replace(/[.]/g, "");
+        const amount = Number(raw);
+        return Number.isFinite(amount) && amount > 0 ? amount : null;
+      };
+      const normalizeExpense = (text: string): { label: string; routine: boolean } => {
+        const lower = text.toLowerCase();
+        if (lower.includes("bangunan") || lower.includes("pernak") || lower.includes("cat") || lower.includes("amplas")) return { label: "Material / Perawatan Lingkungan", routine: false };
+        if (lower.includes("pln") || lower.includes("listrik")) return { label: "Listrik Pos Satpam", routine: true };
+        if (lower.includes("pdam")) return { label: "PDAM Balai Warga", routine: true };
+        if (lower.includes("fee ipl")) return { label: "Fee IPL", routine: true };
+        if (lower.includes("insentif") || lower.includes("intensif")) return { label: "Insentif Penarikan IPL", routine: true };
+        if (lower.includes("satpam") || lower.includes("security")) return { label: "Gaji Petugas Keamanan / Satpam", routine: true };
+        if (lower.includes("gaji kebersihan") || lower.includes("bpjs")) return { label: "Gaji Kebersihan + BPJS", routine: true };
+        if (lower.includes("sampah")) return { label: "Bayar Sampah", routine: true };
+        if (lower.includes("nasrani")) return { label: "Dana Hak Nasrani", routine: true };
+        if (lower.includes("posyandu")) return { label: "Posyandu", routine: true };
+        if (lower.includes("dkm")) return { label: "Dana DKM", routine: true };
+        if (lower.includes("galon") || lower.includes("air")) return { label: "Air Galon Pos / Balai Warga", routine: false };
+        if (lower.includes("sakit") || lower.includes("besuk") || lower.includes("jenguk")) return { label: "Jenguk / Besuk Warga Sakit", routine: false };
+        if (lower.includes("rapat")) return { label: "Konsumsi Rapat", routine: false };
+        if (lower.includes("atk") || lower.includes("hvs") || lower.includes("amplop") || lower.includes("kwitansi") || lower.includes("buku kas") || lower.includes("laminating")) return { label: "ATK / Administrasi", routine: false };
+        if (lower.includes("bensin")) return { label: "Bensin Operasional", routine: false };
+        if (lower.includes("lampu")) return { label: "Lampu / Perlengkapan Listrik", routine: false };
+        if (lower.includes("sapu")) return { label: "Beli Sapu", routine: false };
+        if (lower.includes("germor")) return { label: "Germor", routine: false };
+        return { label: text.split(":")[0].trim() || "Lain-lain", routine: isRoutineExpense({ ...({} as Finance), nama_transaksi: text, deskripsi: "", kategori: "" }) };
+      };
+      const addSummary = (label: string, amount: number, routine: boolean) => {
+        const existing = summaryMap.get(label);
+        summaryMap.set(label, { label, routine, amount: (existing?.amount || 0) + amount });
+      };
+      pengeluaran.forEach((r) => {
+        const lines = splitLines(r.deskripsi);
+        if (!lines.length) {
+          const info = normalizeExpense(r.nama_transaksi);
+          addSummary(info.label, r.debit || 0, info.routine);
+          return;
+        }
+        let allocated = 0;
+        lines.forEach((line) => {
+          const amount = parseAmount(line);
+          if (!amount) return;
+          const info = normalizeExpense(line);
+          addSummary(info.label, amount, info.routine);
+          allocated += amount;
+        });
+        const diff = Math.round((r.debit || 0) - allocated);
+        if (Math.abs(diff) > 0) {
+          const info = normalizeExpense(r.nama_transaksi);
+          addSummary(info.label, diff, info.routine);
+        }
+      });
+      const summaryRows = Array.from(summaryMap.values()).filter((r) => r.amount > 0);
+      const routineRows = summaryRows.filter((r) => r.routine).sort((a, b) => a.label.localeCompare(b.label));
+      const nonRoutineRows = summaryRows.filter((r) => !r.routine).sort((a, b) => a.label.localeCompare(b.label));
+      const totalRutin = routineRows.reduce((sum, r) => sum + r.amount, 0);
+      const totalTidakRutin = nonRoutineRows.reduce((sum, r) => sum + r.amount, 0);
+      const totalPengeluaran = totalRutin + totalTidakRutin;
+      const surplus = totalPemasukan - totalPengeluaran;
+      const saldoAkhir = saldoAwal + surplus;
+
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const money = (value: number) => formatRp(value).replace("Rp", "Rp ");
+      let y = 14;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("PERUMAHAN CITRA INDAH CITY", pageWidth / 2, y, { align: "center" });
+      y += 5;
+      doc.text("CLUSTER MANDIRI BUKIT CENDANA", pageWidth / 2, y, { align: "center" });
+      y += 5;
+      doc.setFontSize(9);
+      doc.text("DESA SUKAMAJU RT.06 RW.09 KECAMATAN JONGGOL", pageWidth / 2, y, { align: "center" });
+      y += 5;
+      doc.text("KABUPATEN BOGOR 16830", pageWidth / 2, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(9);
+      doc.text("RINCIAN LAPORAN KAS BENDAHARA RT. 06/09 CLUSTER BUKIT CENDANA", pageWidth / 2, y, { align: "center" });
+      y += 5;
+      doc.text(`PERIODE ${range.label.toUpperCase()}`, pageWidth / 2, y, { align: "center" });
+      y += 8;
+
+      autoTable(doc, {
+        startY: y,
+        theme: "grid",
+        styles: { fontSize: 8.5, cellPadding: 2.2, overflow: "linebreak", valign: "middle" },
+        headStyles: { fillColor: [31, 78, 121], textColor: 255, halign: "center" },
+        columnStyles: {
+          0: { cellWidth: 18, halign: "center" },
+          1: { cellWidth: 108 },
+          2: { cellWidth: 55, halign: "right" },
+        },
+        head: [["No", "Uraian", "Jumlah"]],
+        body: [
+          ["(I)", "Saldo Awal", money(saldoAwal)],
+          ["", "", ""],
+          ["(II)", "Penerimaan", ""],
+          ["1", "Iuran Bulanan Warga (IPL)", money(totalPemasukan)],
+          ["", "Jumlah (II)", money(totalPemasukan)],
+          ["", "", ""],
+          ["(III)", "Pengeluaran Rutin", ""],
+          ...routineRows.map((r, i) => [String(i + 1), r.label, money(r.amount)]),
+          ["", "Jumlah (III)", money(totalRutin)],
+          ["", "", ""],
+          ["(IV)", "Pengeluaran Tidak Rutin", ""],
+          ...nonRoutineRows.map((r, i) => [String(i + 1), r.label, money(r.amount)]),
+          ["", "Jumlah (IV)", money(totalTidakRutin)],
+          ["", "", ""],
+          ["(V)", "(Defisit) / Surplus (II-III-IV)", money(surplus)],
+          ["", "", ""],
+          ["", "SALDO AKHIR KAS (I + V)", money(saldoAkhir)],
+        ],
+        didParseCell: (data) => {
+          const raw = data.row.raw as unknown;
+          const label = Array.isArray(raw) ? String(raw[1] || "") : "";
+          if (["Saldo Awal", "Penerimaan", "Pengeluaran Rutin", "Pengeluaran Tidak Rutin"].includes(label)) {
+            data.cell.styles.fontStyle = "bold";
+            data.cell.styles.fillColor = [242, 242, 242];
+          }
+          if (label.startsWith("Jumlah") || label.includes("Defisit") || label.includes("Surplus")) {
+            data.cell.styles.fontStyle = "bold";
+            data.cell.styles.fillColor = [255, 242, 204];
+          }
+          if (label.includes("SALDO AKHIR")) {
+            data.cell.styles.fontStyle = "bold";
+            data.cell.styles.fillColor = [217, 234, 211];
+          }
+        },
+      });
+
+      const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 120;
+      if (finalY > 225) doc.addPage();
+      const signY = finalY > 225 ? 25 : finalY + 18;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(`Jonggol, ${range.label}`, 150, signY, { align: "center" });
+      doc.text("Ketua RT. 06/09", 45, signY + 8, { align: "center" });
+      doc.text("Sekretaris RT 06/09", 105, signY + 8, { align: "center" });
+      doc.text("Bendahara", 165, signY + 8, { align: "center" });
+      doc.setFont("helvetica", "bold");
+      doc.text("( Hendra Mulianto )", 45, signY + 34, { align: "center" });
+      doc.text("( Suwardi )", 105, signY + 34, { align: "center" });
+      doc.text("( Ratno Hidayat )", 165, signY + 34, { align: "center" });
+
+      doc.save(`Laporan_Keuangan_Bukit_Cendana_${pdfMonth}.pdf`);
+    } catch {
+      showSuccess("Gagal membuat PDF");
+    }
+    setDownloadingPDF(false);
   };
 
   useEffect(() => {
@@ -324,15 +554,30 @@ export default function FinancePage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pemasukan & Pengeluaran</h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{total} transaksi tercatat</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport} loading={exporting}>
-            <FileDown className="w-4 h-4 mr-2" />
-            Export XLS
-          </Button>
-          <Button onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-2" />
-            Tambah Transaksi
-          </Button>
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div className="flex gap-2 items-center">
+            <input
+              type="month"
+              value={pdfMonth}
+              onChange={(e) => setPdfMonth(e.target.value)}
+              className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="Pilih bulan laporan PDF"
+            />
+            <Button variant="outline" onClick={handleDownloadPDF} loading={downloadingPDF}>
+              <FileDown className="w-4 h-4 mr-2" />
+              Download PDF
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExport} loading={exporting}>
+              <FileDown className="w-4 h-4 mr-2" />
+              Export XLS
+            </Button>
+            <Button onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-2" />
+              Tambah Transaksi
+            </Button>
+          </div>
         </div>
       </div>
 
