@@ -267,12 +267,12 @@ export async function exportWargaPDF(rows: {
       halign: 'center'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 8 },
-      1: { cellWidth: 42 },
+      0: { halign: 'center', cellWidth: 12, overflow: 'visible' },
+      1: { cellWidth: 40 },
       2: { halign: 'center', cellWidth: 15 },
       3: { halign: 'center', cellWidth: 22 },
       4: { halign: 'center', cellWidth: 20 },
-      5: { cellWidth: 42 },
+      5: { cellWidth: 40 },
       6: { cellWidth: 33 },
     },
     didParseCell: (data) => {
