@@ -150,6 +150,7 @@ export async function exportWargaPDF(rows: {
   no: number;
   nama: string;
   blok: string;
+  kondisi_rumah: string;
   last_payment_raw: string;
 }[], customDate?: Date) {
   const doc = new jsPDF({
@@ -233,6 +234,7 @@ export async function exportWargaPDF(rows: {
       no: w.no,
       nama: w.nama,
       blok: w.blok,
+      kondisiRumah: w.kondisi_rumah || "-",
       tagihan,
       keterangan,
       lainLain,
@@ -243,11 +245,12 @@ export async function exportWargaPDF(rows: {
 
   autoTable(doc, {
     startY: 30,
-    head: [['NO', 'NAMA WARGA', 'BLOK', 'TAGIHAN', 'KETERANGAN', 'LAIN-LAIN']],
+    head: [['NO', 'NAMA WARGA', 'BLOK', 'KONDISI', 'TAGIHAN', 'KETERANGAN', 'LAIN-LAIN']],
     body: tableData.map(row => [
       row.no,
       row.nama,
       row.blok,
+      row.kondisiRumah,
       row.tagihan,
       row.keterangan,
       row.lainLain
@@ -264,18 +267,19 @@ export async function exportWargaPDF(rows: {
       halign: 'center'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 10 },
-      1: { cellWidth: 50 },
-      2: { halign: 'center', cellWidth: 18 },
+      0: { halign: 'center', cellWidth: 8 },
+      1: { cellWidth: 42 },
+      2: { halign: 'center', cellWidth: 15 },
       3: { halign: 'center', cellWidth: 22 },
-      4: { cellWidth: 50 },
-      5: { cellWidth: 40 },
+      4: { halign: 'center', cellWidth: 20 },
+      5: { cellWidth: 42 },
+      6: { cellWidth: 33 },
     },
     didParseCell: (data) => {
       if (data.row.index >= 0 && data.section === 'body') {
         const rowData = tableData[data.row.index];
-        // Hanya warnai kolom TAGIHAN (index 3) dan KETERANGAN (index 4) jika ada warna
-        if (rowData.bgColor && (data.column.index === 3 || data.column.index === 4)) {
+        // Hanya warnai kolom TAGIHAN (index 4) dan KETERANGAN (index 5) jika ada warna
+        if (rowData.bgColor && (data.column.index === 4 || data.column.index === 5)) {
           data.cell.styles.fillColor = rowData.bgColor;
           if (rowData.textColor) {
             data.cell.styles.textColor = rowData.textColor;

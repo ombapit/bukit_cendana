@@ -45,7 +45,7 @@ function getQRImageURL(qrCode: string): string {
   return `${base}${qrCode}`;
 }
 
-const KONDISI_OPTIONS = ["", "Ditinggali", "Kosong", "Disewakan"] as const;
+const KONDISI_OPTIONS = ["", "Ditinggali", "Kosong", "Disewakan", "Rusak"] as const;
 
 const emptyForm = { nama: "", blok: "", no_telp: "", iuran: "", kondisi_rumah: "" };
 const emptyAnggotaForm = { nama: "", status_hubungan: "", no_telp: "" };
@@ -328,6 +328,7 @@ export default function WargaAdminPage() {
           "Ditinggali": "bg-green-500/10 text-green-700 dark:text-green-400",
           "Kosong":     "bg-gray-500/10 text-gray-600 dark:text-gray-400",
           "Disewakan":  "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+          "Rusak":      "bg-rose-500/10 text-rose-700 dark:text-rose-400",
         };
         return (
           <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[kondisi] ?? "bg-gray-100 text-gray-600"}`}>
@@ -455,11 +456,14 @@ export default function WargaAdminPage() {
     setExportingPdf(true);
     try {
       const customDate = filterTanggal ? new Date(filterTanggal) : undefined;
+      const pdfRows = filtered.filter((w) => (w.kondisi_rumah || "") !== "Rusak");
+
       await exportWargaPDF(
-        filtered.map((w, i) => ({
+        pdfRows.map((w, i) => ({
           no: i + 1,
           nama: w.nama,
           blok: w.blok,
+          kondisi_rumah: w.kondisi_rumah || "-",
           last_payment_raw: w.last_payment,
         })),
         customDate
@@ -589,6 +593,7 @@ export default function WargaAdminPage() {
                           <span className={`px-2 py-0.5 text-xs rounded font-medium ${
                             w.kondisi_rumah === "Ditinggali" ? "bg-green-500/10 text-green-700 dark:text-green-400" :
                             w.kondisi_rumah === "Disewakan"  ? "bg-blue-500/10 text-blue-700 dark:text-blue-400" :
+                            w.kondisi_rumah === "Rusak"      ? "bg-rose-500/10 text-rose-700 dark:text-rose-400" :
                             "bg-gray-500/10 text-gray-600 dark:text-gray-400"
                           }`}>{w.kondisi_rumah}</span>
                         )}

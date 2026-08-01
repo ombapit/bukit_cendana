@@ -152,6 +152,7 @@ export default function WargaPage() {
           "Ditinggali": "bg-green-500/10 text-green-700 dark:text-green-400",
           "Kosong":     "bg-gray-500/10 text-gray-600 dark:text-gray-400",
           "Disewakan":  "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+          "Rusak":      "bg-rose-500/10 text-rose-700 dark:text-rose-400",
         };
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[k] ?? ""}`}>{k}</span>;
       },
@@ -246,6 +247,7 @@ export default function WargaPage() {
             <option value="Ditinggali">Ditinggali</option>
             <option value="Kosong">Kosong</option>
             <option value="Disewakan">Disewakan</option>
+            <option value="Rusak">Rusak</option>
           </select>
         </div>
 
@@ -274,6 +276,7 @@ export default function WargaPage() {
                             <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${
                               w.kondisi_rumah === "Ditinggali" ? "bg-green-500/15 text-green-700 dark:text-green-400" :
                               w.kondisi_rumah === "Kosong" ? "bg-gray-500/15 text-gray-600 dark:text-gray-400" :
+                              w.kondisi_rumah === "Rusak" ? "bg-rose-500/15 text-rose-700 dark:text-rose-400" :
                               "bg-blue-500/15 text-blue-700 dark:text-blue-400"
                             }`}>{w.kondisi_rumah}</span>
                           )}
