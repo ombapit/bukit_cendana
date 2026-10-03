@@ -6,6 +6,7 @@ services:
   # di .env jika menggunakan mode ini.
   # ============================================
   api:
+    image: bukit_cendana-api:latest
     build:
       context: ./be
       dockerfile: Dockerfile
@@ -27,6 +28,7 @@ services:
       - bukitcendana-network
 
   app:
+    image: bukit_cendana-app:latest
     build:
       context: ./fe
       dockerfile: Dockerfile

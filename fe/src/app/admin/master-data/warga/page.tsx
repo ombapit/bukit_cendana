@@ -56,6 +56,7 @@ export default function WargaAdminPage() {
   const [search, setSearch] = useState("");
   const [filterBlok, setFilterBlok] = useState("");
   const [filterKondisi, setFilterKondisi] = useState("");
+  const [filterTunggakan, setFilterTunggakan] = useState("");
   const [filterTanggal, setFilterTanggal] = useState("");
   const [total, setTotal] = useState(0);
 
@@ -106,7 +107,7 @@ export default function WargaAdminPage() {
   const fetchWargas = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await wargaService.getAll(1, 1000);
+      const res = await wargaService.getAll(1, 1000, filterTunggakan ? parseInt(filterTunggakan) : undefined);
       const body = res.data;
       const data = body?.data || [];
       setWargas(data);
@@ -115,7 +116,7 @@ export default function WargaAdminPage() {
       setWargas([]);
     }
     setLoading(false);
-  }, []);
+  }, [filterTunggakan]);
 
   useEffect(() => {
     fetchWargas();
@@ -535,6 +536,16 @@ export default function WargaAdminPage() {
           {KONDISI_OPTIONS.filter(Boolean).map((k) => (
             <option key={k} value={k}>{k}</option>
           ))}
+        </select>
+        <select
+          value={filterTunggakan}
+          onChange={(e) => setFilterTunggakan(e.target.value)}
+          className="px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 dark:bg-white/5 dark:text-slate-100 sm:w-44"
+        >
+          <option value="">Semua Pembayaran</option>
+          <option value="2">Tunggakan &gt; 2 Bulan</option>
+          <option value="3">Tunggakan &gt; 3 Bulan</option>
+          <option value="4">Tunggakan 4+ Bulan</option>
         </select>
         <input
           type="date"

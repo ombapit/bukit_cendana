@@ -184,9 +184,10 @@ export default function FinancePage() {
         getAllFinanceForRange("", range.dateFrom, range.dateTo),
       ]);
 
+      const pemasukan = monthRows.filter((r) => r.kredit > 0);
       const pengeluaran = monthRows.filter((r) => r.debit > 0);
       const saldoAwal = beforeMonth.reduce((sum, r) => sum + (r.kredit || 0) - (r.debit || 0), 0);
-      const totalPemasukan = monthRows.reduce((sum, r) => sum + (r.kredit || 0), 0);
+      const totalPemasukan = pemasukan.reduce((sum, r) => sum + (r.kredit || 0), 0);
 
       type SummaryRow = { label: string; amount: number; routine: boolean };
       const summaryMap = new Map<string, SummaryRow>();
@@ -204,6 +205,8 @@ export default function FinancePage() {
         if (lower.includes("pdam")) return { label: "PDAM Balai Warga", routine: true };
         if (lower.includes("fee ipl")) return { label: "Fee IPL", routine: true };
         if (lower.includes("insentif") || lower.includes("intensif")) return { label: "Insentif Penarikan IPL", routine: true };
+        if (lower.includes("kasbon") && (lower.includes("security") || lower.includes("satpam") || lower.includes("keamanan"))) return { label: "Kasbon Security", routine: true };
+        if (lower.includes("kasbon")) return { label: "Kasbon", routine: false };
         if (lower.includes("satpam") || lower.includes("security")) return { label: "Gaji Petugas Keamanan / Satpam", routine: true };
         if (lower.includes("gaji kebersihan") || lower.includes("bpjs")) return { label: "Gaji Kebersihan + BPJS", routine: true };
         if (lower.includes("sampah")) return { label: "Bayar Sampah", routine: true };
@@ -224,6 +227,26 @@ export default function FinancePage() {
         const existing = summaryMap.get(label);
         summaryMap.set(label, { label, routine, amount: (existing?.amount || 0) + amount });
       };
+      const normalizeIncome = (r: Finance): string => {
+        const text = `${r.nama_transaksi} ${r.deskripsi} ${r.kategori} ${r.referensi_tipe}`.toLowerCase();
+        if (text.includes("kasbon") && (text.includes("security") || text.includes("satpam") || text.includes("keamanan"))) return "Pembayaran Kasbon Security";
+        if (text.includes("lapak")) return "Penerimaan Lapak";
+        if (r.referensi_tipe === "ipl" || text.includes("ipl") || text.includes("iuran")) return "Iuran Bulanan Warga (IPL)";
+
+        const kategori = r.kategori?.trim();
+        if (kategori && kategori.toLowerCase() !== "lain-lain") return `Penerimaan ${kategori}`;
+
+        return r.nama_transaksi.split(":")[0].trim() || "Penerimaan Lain-lain";
+      };
+      const incomeMap = new Map<string, number>();
+      pemasukan.forEach((r) => {
+        const label = normalizeIncome(r);
+        incomeMap.set(label, (incomeMap.get(label) || 0) + (r.kredit || 0));
+      });
+      const incomeRows = Array.from(incomeMap.entries())
+        .map(([label, amount]) => ({ label, amount }))
+        .filter((r) => r.amount > 0)
+        .sort((a, b) => a.label.localeCompare(b.label));
       pengeluaran.forEach((r) => {
         const lines = splitLines(r.deskripsi);
         if (!lines.length) {
@@ -241,7 +264,9 @@ export default function FinancePage() {
         });
         const diff = Math.round((r.debit || 0) - allocated);
         if (Math.abs(diff) > 0) {
-          const info = normalizeExpense(r.nama_transaksi);
+          const info = allocated > 0
+            ? { label: "Lain-lain", routine: false }
+            : normalizeExpense(r.nama_transaksi);
           addSummary(info.label, diff, info.routine);
         }
       });
@@ -291,7 +316,7 @@ export default function FinancePage() {
           ["(I)", "Saldo Awal", money(saldoAwal)],
           ["", "", ""],
           ["(II)", "Penerimaan", ""],
-          ["1", "Iuran Bulanan Warga (IPL)", money(totalPemasukan)],
+          ...incomeRows.map((r, i) => [String(i + 1), r.label, money(r.amount)]),
           ["", "Jumlah (II)", money(totalPemasukan)],
           ["", "", ""],
           ["(III)", "Pengeluaran Rutin", ""],
