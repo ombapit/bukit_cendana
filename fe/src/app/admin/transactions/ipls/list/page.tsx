@@ -69,6 +69,13 @@ function getImageURL(gambar: string): string {
   return `${base}${gambar}`;
 }
 
+const metodePembayaranLabels = {
+  cash: "Cash",
+  transfer: "Transfer",
+  qris: "QRIS",
+  lainnya: "Lainnya",
+} as const;
+
 export default function IPLListPage() {
   const [ipls, setIpls] = useState<IPL[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,14 +95,14 @@ export default function IPLListPage() {
 
   // Create modal
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState({ warga_id: "", tanggal_ipl_start: "", tanggal_ipl_end: "", created_at: "", gambar: null as File | null });
+  const [createForm, setCreateForm] = useState({ warga_id: "", tanggal_ipl_start: "", tanggal_ipl_end: "", metode_pembayaran: "cash" as IPL["metode_pembayaran"], created_at: "", gambar: null as File | null });
   const [creating, setCreating] = useState(false);
   const createFileRef = useRef<HTMLInputElement>(null);
 
   // Edit modal
   const [editOpen, setEditOpen] = useState(false);
   const [editingIPL, setEditingIPL] = useState<IPL | null>(null);
-  const [editForm, setEditForm] = useState({ tanggal_ipl: "", created_at: "", gambar: null as File | null });
+  const [editForm, setEditForm] = useState({ tanggal_ipl: "", metode_pembayaran: "cash" as IPL["metode_pembayaran"], created_at: "", gambar: null as File | null });
   const [editing, setEditing] = useState(false);
   const editFileRef = useRef<HTMLInputElement>(null);
 
@@ -204,7 +211,7 @@ export default function IPLListPage() {
   };
 
   const openCreate = () => {
-    setCreateForm({ warga_id: "", tanggal_ipl_start: "", tanggal_ipl_end: "", created_at: todayStr(), gambar: null });
+    setCreateForm({ warga_id: "", tanggal_ipl_start: "", tanggal_ipl_end: "", metode_pembayaran: "cash", created_at: todayStr(), gambar: null });
     setWargaSearch("");
     setWargaDropdownOpen(false);
     if (createFileRef.current) createFileRef.current.value = "";
@@ -221,6 +228,7 @@ export default function IPLListPage() {
       const fd = new FormData();
       fd.append("warga_id", createForm.warga_id);
       fd.append("tanggal_ipl", inputMonthToYYYYMM(createForm.tanggal_ipl_start));
+	  fd.append("metode_pembayaran", createForm.metode_pembayaran);
       if (createForm.tanggal_ipl_end && createForm.tanggal_ipl_end >= createForm.tanggal_ipl_start) {
         fd.append("tanggal_ipl_end", inputMonthToYYYYMM(createForm.tanggal_ipl_end));
       }
@@ -240,7 +248,7 @@ export default function IPLListPage() {
   // ========== Edit ==========
   const openEdit = (ipl: IPL) => {
     setEditingIPL(ipl);
-    setEditForm({ tanggal_ipl: yyyymmToInputMonth(ipl.tanggal_ipl), created_at: isoToDateInput(ipl.created_at), gambar: null });
+    setEditForm({ tanggal_ipl: yyyymmToInputMonth(ipl.tanggal_ipl), metode_pembayaran: ipl.metode_pembayaran, created_at: isoToDateInput(ipl.created_at), gambar: null });
     if (editFileRef.current) editFileRef.current.value = "";
     setEditOpen(true);
   };
@@ -251,6 +259,7 @@ export default function IPLListPage() {
     try {
       const fd = new FormData();
       fd.append("tanggal_ipl", inputMonthToYYYYMM(editForm.tanggal_ipl));
+	  fd.append("metode_pembayaran", editForm.metode_pembayaran);
       if (editForm.created_at) fd.append("created_at", editForm.created_at);
       if (editForm.gambar) fd.append("gambar", editForm.gambar);
       await iplService.update(editingIPL.id, fd);
@@ -302,6 +311,15 @@ export default function IPLListPage() {
       render: (ipl: IPL) => (
         <span className="px-2 py-1 bg-red-700/10 text-red-700 dark:bg-red-700/20 dark:text-red-400 rounded text-sm">
           {formatTanggalIPL(ipl.tanggal_ipl)}
+        </span>
+      ),
+    },
+    {
+      key: "metode_pembayaran",
+      header: "Metode Pembayaran",
+      render: (ipl: IPL) => (
+        <span className="text-sm text-gray-700 dark:text-gray-300">
+          {metodePembayaranLabels[ipl.metode_pembayaran]}
         </span>
       ),
     },
@@ -457,6 +475,10 @@ export default function IPLListPage() {
                         {new Date(ipl.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
                       </p>
                     </div>
+					<div>
+					  <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Metode Pembayaran</p>
+					  <p className="text-sm text-gray-700 dark:text-gray-300">{metodePembayaranLabels[ipl.metode_pembayaran]}</p>
+					</div>
                   </div>
                   {ipl.gambar ? (
                     <a href={getImageURL(ipl.gambar)} target="_blank" rel="noopener noreferrer" className="inline-block mt-3">
@@ -605,6 +627,20 @@ export default function IPLListPage() {
           </div>
 
           {/* Tanggal Input */}
+		  <div>
+			<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+			  Metode Pembayaran <span className="text-red-500">*</span>
+			</label>
+			<select
+			  value={createForm.metode_pembayaran}
+			  onChange={(e) => setCreateForm({ ...createForm, metode_pembayaran: e.target.value as IPL["metode_pembayaran"] })}
+			  className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+			>
+			  {Object.entries(metodePembayaranLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+			</select>
+		  </div>
+
+		  {/* Tanggal Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Tanggal Pembayaran
@@ -678,6 +714,18 @@ export default function IPLListPage() {
             </div>
 
             {/* Tanggal Pembayaran */}
+			<div>
+			  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Metode Pembayaran</label>
+			  <select
+				value={editForm.metode_pembayaran}
+				onChange={(e) => setEditForm({ ...editForm, metode_pembayaran: e.target.value as IPL["metode_pembayaran"] })}
+				className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+			  >
+				{Object.entries(metodePembayaranLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+			  </select>
+			</div>
+
+			{/* Tanggal Pembayaran */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Tanggal Pembayaran

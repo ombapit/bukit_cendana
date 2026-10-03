@@ -89,6 +89,7 @@ func (h *IPLHandler) FindAll(c *gin.Context) {
 // @Security    BearerAuth
 // @Param       warga_id    formData string true  "Warga ID"
 // @Param       tanggal_ipl formData string true  "Periode YYYYMM"
+// @Param       metode_pembayaran formData string true "Metode: cash, transfer, qris, atau lainnya"
 // @Param       gambar      formData file   false "Bukti pembayaran"
 // @Success     201 {object} utils.APIResponse{data=models.IPLResponse}
 // @Router      /ipls [post]
@@ -110,10 +111,11 @@ func (h *IPLHandler) Create(c *gin.Context) {
 	gambarPath := saveUploadedFile(c, "gambar")
 
 	req := models.CreateIPLRequest{
-		WargaID:       wargaID,
-		TanggalIPL:    tanggalIPL,
-		TanggalIPLEnd: c.PostForm("tanggal_ipl_end"),
-		Gambar:        gambarPath,
+		WargaID:          wargaID,
+		TanggalIPL:       tanggalIPL,
+		TanggalIPLEnd:    c.PostForm("tanggal_ipl_end"),
+		MetodePembayaran: c.PostForm("metode_pembayaran"),
+		Gambar:           gambarPath,
 	}
 	if createdAtStr := c.PostForm("created_at"); createdAtStr != "" {
 		if t, err := time.Parse("2006-01-02", createdAtStr); err == nil {
@@ -138,6 +140,7 @@ func (h *IPLHandler) Create(c *gin.Context) {
 // @Security    BearerAuth
 // @Param       id          path     string true  "IPL ID"
 // @Param       tanggal_ipl formData string false "Periode YYYYMM"
+// @Param       metode_pembayaran formData string false "Metode: cash, transfer, qris, atau lainnya"
 // @Param       gambar      formData file   false "Bukti pembayaran"
 // @Success     200 {object} utils.APIResponse{data=models.IPLResponse}
 // @Router      /ipls/{id} [put]
@@ -158,6 +161,10 @@ func (h *IPLHandler) Update(c *gin.Context) {
 	if tanggalIPL == "" {
 		tanggalIPL = existing.TanggalIPL
 	}
+	metodePembayaran := c.PostForm("metode_pembayaran")
+	if metodePembayaran == "" {
+		metodePembayaran = existing.MetodePembayaran
+	}
 
 	gambarPath := saveUploadedFile(c, "gambar")
 	if gambarPath == "" {
@@ -168,9 +175,10 @@ func (h *IPLHandler) Update(c *gin.Context) {
 	}
 
 	req := models.UpdateIPLRequest{
-		TanggalIPL: tanggalIPL,
-		Gambar:     gambarPath,
-		CreatedAt:  existing.CreatedAt,
+		TanggalIPL:       tanggalIPL,
+		MetodePembayaran: metodePembayaran,
+		Gambar:           gambarPath,
+		CreatedAt:        existing.CreatedAt,
 	}
 	if createdAtStr := c.PostForm("created_at"); createdAtStr != "" {
 		if t, err := time.Parse("2006-01-02", createdAtStr); err == nil {

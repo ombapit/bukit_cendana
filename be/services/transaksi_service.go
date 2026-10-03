@@ -44,6 +44,20 @@ func monthsInRange(start, end string) ([]string, error) {
 	return months, nil
 }
 
+func normalizeMetodePembayaran(metode string) (string, error) {
+	metode = strings.ToLower(strings.TrimSpace(metode))
+	if metode == "" {
+		return models.MetodePembayaranLainnya, nil
+	}
+
+	switch metode {
+	case models.MetodePembayaranCash, models.MetodePembayaranTransfer, models.MetodePembayaranQRIS, models.MetodePembayaranLainnya:
+		return metode, nil
+	default:
+		return "", errors.New("metode_pembayaran harus cash, transfer, qris, atau lainnya")
+	}
+}
+
 type IPLService struct {
 	iplRepo        *repositories.IPLRepository
 	financeService *FinanceService
@@ -54,6 +68,11 @@ func NewIPLService(iplRepo *repositories.IPLRepository, financeService *FinanceS
 }
 
 func (s *IPLService) Create(req models.CreateIPLRequest) ([]models.IPLResponse, error) {
+	metodePembayaran, err := normalizeMetodePembayaran(req.MetodePembayaran)
+	if err != nil {
+		return nil, err
+	}
+
 	endPeriod := req.TanggalIPLEnd
 	if endPeriod == "" {
 		endPeriod = req.TanggalIPL
@@ -67,9 +86,10 @@ func (s *IPLService) Create(req models.CreateIPLRequest) ([]models.IPLResponse, 
 	results := make([]models.IPLResponse, 0, len(months))
 	for _, month := range months {
 		ipl := &models.IPL{
-			WargaID:    req.WargaID,
-			TanggalIPL: month,
-			Gambar:     req.Gambar,
+			WargaID:          req.WargaID,
+			TanggalIPL:       month,
+			MetodePembayaran: metodePembayaran,
+			Gambar:           req.Gambar,
 		}
 		if !req.CreatedAt.IsZero() {
 			ipl.CreatedAt = req.CreatedAt
@@ -123,6 +143,11 @@ func (s *IPLService) Update(id uuid.UUID, req models.UpdateIPLRequest) (*models.
 	if req.TanggalIPL != "" {
 		ipl.TanggalIPL = req.TanggalIPL
 	}
+	metodePembayaran, err := normalizeMetodePembayaran(req.MetodePembayaran)
+	if err != nil {
+		return nil, err
+	}
+	ipl.MetodePembayaran = metodePembayaran
 	ipl.Gambar = req.Gambar
 	if !req.CreatedAt.IsZero() {
 		ipl.CreatedAt = req.CreatedAt

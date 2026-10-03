@@ -36,7 +36,7 @@ func (r *IPLRepository) FindAll(page, limit int, search, blok string) ([]models.
 
 	countQ := r.db.Table("ipls").Joins("LEFT JOIN warga ON warga.id = ipls.warga_id")
 	dataQ := r.db.Table("ipls").
-		Select(`ipls.id, ipls.warga_id, warga.nama as warga_nama, warga.blok as warga_blok, ipls.tanggal_ipl, ipls.gambar, ipls.created_at`).
+		Select(`ipls.id, ipls.warga_id, warga.nama as warga_nama, warga.blok as warga_blok, ipls.tanggal_ipl, ipls.metode_pembayaran, ipls.gambar, ipls.created_at`).
 		Joins("LEFT JOIN warga ON warga.id = ipls.warga_id")
 
 	if search != "" {
@@ -62,10 +62,11 @@ func (r *IPLRepository) FindAll(page, limit int, search, blok string) ([]models.
 
 func (r *IPLRepository) Update(ipl *models.IPL) error {
 	return r.db.Model(ipl).Updates(map[string]interface{}{
-		"tanggal_ipl": ipl.TanggalIPL,
-		"gambar":      ipl.Gambar,
-		"created_at":  ipl.CreatedAt,
-		"updated_at":  time.Now(),
+		"tanggal_ipl":       ipl.TanggalIPL,
+		"metode_pembayaran": ipl.MetodePembayaran,
+		"gambar":            ipl.Gambar,
+		"created_at":        ipl.CreatedAt,
+		"updated_at":        time.Now(),
 	}).Error
 }
 

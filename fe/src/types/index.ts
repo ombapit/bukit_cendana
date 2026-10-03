@@ -266,6 +266,7 @@ export interface IPL {
   warga_nama: string;
   warga_blok: string;
   tanggal_ipl: string;
+  metode_pembayaran: "cash" | "transfer" | "qris" | "lainnya";
   gambar: string;
   created_at: string;
 }

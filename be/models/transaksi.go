@@ -6,14 +6,22 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	MetodePembayaranCash     = "cash"
+	MetodePembayaranTransfer = "transfer"
+	MetodePembayaranQRIS     = "qris"
+	MetodePembayaranLainnya  = "lainnya"
+)
+
 type IPL struct {
-	ID         uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	WargaID    uuid.UUID `gorm:"type:uuid;not null" json:"warga_id"`
-	TanggalIPL string    `gorm:"type:varchar(6);not null;column:tanggal_ipl" json:"tanggal_ipl"`
-	Gambar     string    `gorm:"type:varchar(500)" json:"gambar"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	Warga      *Warga    `gorm:"foreignKey:WargaID" json:"warga,omitempty"`
+	ID               uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	WargaID          uuid.UUID `gorm:"type:uuid;not null" json:"warga_id"`
+	TanggalIPL       string    `gorm:"type:varchar(6);not null;column:tanggal_ipl" json:"tanggal_ipl"`
+	MetodePembayaran string    `gorm:"type:varchar(20);not null;default:lainnya;column:metode_pembayaran" json:"metode_pembayaran"`
+	Gambar           string    `gorm:"type:varchar(500)" json:"gambar"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
+	Warga            *Warga    `gorm:"foreignKey:WargaID" json:"warga,omitempty"`
 }
 
 func (IPL) TableName() string {
@@ -21,13 +29,14 @@ func (IPL) TableName() string {
 }
 
 type IPLResponse struct {
-	ID         uuid.UUID `gorm:"column:id"          json:"id"`
-	WargaID    uuid.UUID `gorm:"column:warga_id"    json:"warga_id"`
-	WargaNama  string    `gorm:"column:warga_nama"  json:"warga_nama"`
-	WargaBlok  string    `gorm:"column:warga_blok"  json:"warga_blok"`
-	TanggalIPL string    `gorm:"column:tanggal_ipl" json:"tanggal_ipl"`
-	Gambar     string    `gorm:"column:gambar"      json:"gambar"`
-	CreatedAt  time.Time `gorm:"column:created_at"  json:"created_at"`
+	ID               uuid.UUID `gorm:"column:id"          json:"id"`
+	WargaID          uuid.UUID `gorm:"column:warga_id"    json:"warga_id"`
+	WargaNama        string    `gorm:"column:warga_nama"  json:"warga_nama"`
+	WargaBlok        string    `gorm:"column:warga_blok"  json:"warga_blok"`
+	TanggalIPL       string    `gorm:"column:tanggal_ipl" json:"tanggal_ipl"`
+	MetodePembayaran string    `gorm:"column:metode_pembayaran" json:"metode_pembayaran"`
+	Gambar           string    `gorm:"column:gambar"      json:"gambar"`
+	CreatedAt        time.Time `gorm:"column:created_at"  json:"created_at"`
 }
 
 func (t *IPL) ToResponse() IPLResponse {
@@ -38,26 +47,29 @@ func (t *IPL) ToResponse() IPLResponse {
 		blok = t.Warga.Blok
 	}
 	return IPLResponse{
-		ID:         t.ID,
-		WargaID:    t.WargaID,
-		WargaNama:  nama,
-		WargaBlok:  blok,
-		TanggalIPL: t.TanggalIPL,
-		Gambar:     t.Gambar,
-		CreatedAt:  t.CreatedAt,
+		ID:               t.ID,
+		WargaID:          t.WargaID,
+		WargaNama:        nama,
+		WargaBlok:        blok,
+		TanggalIPL:       t.TanggalIPL,
+		MetodePembayaran: t.MetodePembayaran,
+		Gambar:           t.Gambar,
+		CreatedAt:        t.CreatedAt,
 	}
 }
 
 type CreateIPLRequest struct {
-	WargaID       uuid.UUID `json:"warga_id"`
-	TanggalIPL    string    `json:"tanggal_ipl"`
-	TanggalIPLEnd string    `json:"tanggal_ipl_end"`
-	Gambar        string    `json:"gambar"`
-	CreatedAt     time.Time `json:"created_at"`
+	WargaID          uuid.UUID `json:"warga_id"`
+	TanggalIPL       string    `json:"tanggal_ipl"`
+	TanggalIPLEnd    string    `json:"tanggal_ipl_end"`
+	MetodePembayaran string    `json:"metode_pembayaran"`
+	Gambar           string    `json:"gambar"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 type UpdateIPLRequest struct {
-	TanggalIPL string    `json:"tanggal_ipl"`
-	Gambar     string    `json:"gambar"`
-	CreatedAt  time.Time `json:"created_at"`
+	TanggalIPL       string    `json:"tanggal_ipl"`
+	MetodePembayaran string    `json:"metode_pembayaran"`
+	Gambar           string    `json:"gambar"`
+	CreatedAt        time.Time `json:"created_at"`
 }
