@@ -35,6 +35,16 @@ function formatTanggal(iso: string): string {
   } catch { return "-"; }
 }
 
+function metodePembayaranLabel(metode: NonNullable<Finance["metode_pembayaran"]>): string {
+  const labels = {
+    cash: "Cash",
+    transfer: "Transfer",
+    qris: "QRIS",
+    lainnya: "Lainnya",
+  };
+  return labels[metode];
+}
+
 function isoToDateInput(iso: string): string {
   try { return new Date(iso).toISOString().split("T")[0]; } catch { return todayStr(); }
 }
@@ -164,6 +174,7 @@ export default function FinancePage() {
         "Pemasukan (Rp)": r.kredit || 0,
         "Pengeluaran (Rp)": r.debit || 0,
         "Sumber": r.referensi_tipe || "-",
+        "Metode Pembayaran": r.metode_pembayaran ? metodePembayaranLabel(r.metode_pembayaran) : "-",
       }));
       exportXLS(`Laporan_Keuangan_Bukit_Cendana${suffix}`, "Keuangan", rows);
     } catch { /* ignore */ }
@@ -533,6 +544,15 @@ export default function FinancePage() {
       ),
     },
     {
+      key: "metode_pembayaran",
+      header: "Metode Pembayaran",
+      render: (r: Finance) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          {r.metode_pembayaran ? metodePembayaranLabel(r.metode_pembayaran) : "â€”"}
+        </span>
+      ),
+    },
+    {
       key: "gambar",
       header: "Bukti",
       render: (r: Finance) => r.gambar ? (
@@ -729,6 +749,12 @@ export default function FinancePage() {
                       {r.kredit > 0 && <p className="text-sm font-semibold text-green-600 dark:text-green-400">+ {formatRp(r.kredit)}</p>}
                       {r.debit > 0 && <p className="text-sm font-semibold text-red-600 dark:text-red-400">− {formatRp(r.debit)}</p>}
                     </div>
+					{r.metode_pembayaran && (
+					  <div>
+						<p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Metode Pembayaran</p>
+						<p className="text-sm text-gray-700 dark:text-gray-300">{metodePembayaranLabel(r.metode_pembayaran)}</p>
+					  </div>
+					)}
                   </div>
                   {r.gambar && (
                     <a href={getImageURL(r.gambar)} target="_blank" rel="noopener noreferrer" className="mt-3 block">

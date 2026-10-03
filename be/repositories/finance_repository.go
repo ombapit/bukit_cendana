@@ -32,7 +32,9 @@ func (r *FinanceRepository) FindAll(page, limit int, search, dateFrom, dateTo st
 	var total int64
 
 	countQ := r.db.Model(&models.Finance{})
-	dataQ := r.db.Model(&models.Finance{})
+	dataQ := r.db.Table("finance").
+		Select("finance.*, COALESCE(ipls.metode_pembayaran, '') AS metode_pembayaran").
+		Joins("LEFT JOIN ipls ON ipls.id = finance.referensi_id AND finance.referensi_tipe = ?", "ipl")
 
 	if search != "" {
 		like := "%" + search + "%"
@@ -55,7 +57,7 @@ func (r *FinanceRepository) FindAll(page, limit int, search, dateFrom, dateTo st
 	countQ.Count(&total)
 
 	offset := (page - 1) * limit
-	err := dataQ.Order("tanggal DESC, created_at DESC").Offset(offset).Limit(limit).Find(&results).Error
+	err := dataQ.Order("finance.tanggal DESC, finance.created_at DESC").Offset(offset).Limit(limit).Scan(&results).Error
 	return results, total, err
 }
 

@@ -16,9 +16,11 @@ type Finance struct {
 	Gambar        string     `gorm:"type:varchar(500);column:gambar" json:"gambar"`
 	ReferensiID   *uuid.UUID `gorm:"type:uuid;column:referensi_id" json:"referensi_id"`
 	ReferensiTipe string     `gorm:"type:varchar(50);column:referensi_tipe" json:"referensi_tipe"`
-	Tanggal       time.Time  `gorm:"not null;default:now();column:tanggal" json:"timestamp"`
-	CreatedAt     time.Time  `gorm:"column:created_at" json:"created_at"`
-	UpdatedAt     time.Time  `gorm:"column:updated_at" json:"updated_at"`
+	// MetodePembayaran berasal dari JOIN ke ipls untuk transaksi dengan referensi_tipe "ipl".
+	MetodePembayaran string    `gorm:"column:metode_pembayaran;->;-:migration" json:"metode_pembayaran"`
+	Tanggal          time.Time `gorm:"not null;default:now();column:tanggal" json:"timestamp"`
+	CreatedAt        time.Time `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt        time.Time `gorm:"column:updated_at" json:"updated_at"`
 }
 
 func (Finance) TableName() string { return "finance" }

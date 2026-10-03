@@ -218,6 +218,7 @@ export interface Finance {
   gambar: string;
   referensi_id?: string;
   referensi_tipe: string;
+  metode_pembayaran?: "cash" | "transfer" | "qris" | "lainnya";
   timestamp: string;
   created_at: string;
   updated_at: string;
