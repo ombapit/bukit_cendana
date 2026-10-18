@@ -477,6 +477,7 @@ export default function WargaAdminPage() {
           no: i + 1,
           nama: w.nama,
           blok: w.blok,
+          agama: w.agama || "",
           kondisi_rumah: w.kondisi_rumah || "-",
           last_payment_raw: w.last_payment,
         })),

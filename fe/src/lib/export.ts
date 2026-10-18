@@ -153,6 +153,7 @@ export async function exportWargaPDF(rows: {
   no: number;
   nama: string;
   blok: string;
+  agama: string;
   kondisi_rumah: string;
   last_payment_raw: string;
 }[], customDate?: Date) {
@@ -237,6 +238,7 @@ export async function exportWargaPDF(rows: {
       no: w.no,
       nama: w.nama,
       blok: w.blok,
+      agama: w.agama,
       kondisiRumah: w.kondisi_rumah || "-",
       tagihan,
       keterangan,
@@ -281,7 +283,7 @@ export async function exportWargaPDF(rows: {
     didParseCell: (data) => {
       if (data.row.index >= 0 && data.section === 'body') {
         const rowData = tableData[data.row.index];
-        if (data.column.index === 1) {
+        if (data.column.index === 1 && rowData.agama === "Kristen") {
           data.cell.styles.fillColor = [235, 225, 255];
         }
         // Hanya warnai kolom TAGIHAN (index 4) dan KETERANGAN (index 5) jika ada warna
