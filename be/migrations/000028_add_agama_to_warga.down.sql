@@ -1,0 +1,1 @@
+ALTER TABLE warga DROP COLUMN IF EXISTS agama;

@@ -47,7 +47,9 @@ function getQRImageURL(qrCode: string): string {
 
 const KONDISI_OPTIONS = ["", "Ditinggali", "Kosong", "Disewakan", "Rusak"] as const;
 
-const emptyForm = { nama: "", blok: "", no_telp: "", iuran: "", kondisi_rumah: "" };
+const AGAMA_OPTIONS = ["", "Islam", "Kristen", "Katolik", "Hindu", "Buddha", "Konghucu"] as const;
+
+const emptyForm = { nama: "", blok: "", agama: "", no_telp: "", iuran: "", kondisi_rumah: "" };
 const emptyAnggotaForm = { nama: "", status_hubungan: "", no_telp: "" };
 
 export default function WargaAdminPage() {
@@ -157,6 +159,7 @@ export default function WargaAdminPage() {
       await wargaService.create({
         nama: createForm.nama.trim(),
         blok: createForm.blok.trim(),
+        agama: createForm.agama || undefined,
         no_telp: createForm.no_telp.trim() || undefined,
         iuran: parseFloat(createForm.iuran) || 0,
         kondisi_rumah: createForm.kondisi_rumah || undefined,
@@ -176,6 +179,7 @@ export default function WargaAdminPage() {
     setEditForm({
       nama: w.nama,
       blok: w.blok,
+      agama: w.agama || "",
       no_telp: "",
       iuran: String(w.iuran),
       kondisi_rumah: w.kondisi_rumah || "",
@@ -196,6 +200,7 @@ export default function WargaAdminPage() {
       await wargaService.update(String(editingWarga.id), {
         nama: editForm.nama.trim(),
         blok: editForm.blok.trim(),
+        agama: editForm.agama,
         no_telp: editForm.no_telp.trim(),
         iuran: parseFloat(editForm.iuran) || 0,
         kondisi_rumah: editForm.kondisi_rumah,
@@ -317,6 +322,13 @@ export default function WargaAdminPage() {
         <span className="px-2 py-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded text-sm font-medium">
           {w.blok}
         </span>
+      ),
+    },
+    {
+      key: "agama",
+      header: "Agama",
+      render: (w: WargaWithLastPayment) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400">{w.agama || "-"}</span>
       ),
     },
     {
@@ -442,6 +454,7 @@ export default function WargaAdminPage() {
           no: i + 1,
           nama: w.nama,
           blok: w.blok,
+          agama: w.agama || "-",
           no_telp: "",
           iuran: w.iuran,
           last_payment_label: formatLastPayment(w.last_payment),
@@ -600,6 +613,9 @@ export default function WargaAdminPage() {
                       </div>
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                         <span className="px-2 py-0.5 text-xs rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">{w.blok}</span>
+                        {w.agama && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{w.agama}</span>
+                        )}
                         {w.kondisi_rumah && (
                           <span className={`px-2 py-0.5 text-xs rounded font-medium ${
                             w.kondisi_rumah === "Ditinggali" ? "bg-green-500/10 text-green-700 dark:text-green-400" :
@@ -671,6 +687,20 @@ export default function WargaAdminPage() {
                 placeholder="Cth: A1"
                 className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Agama
+              </label>
+              <select
+                value={createForm.agama}
+                onChange={(e) => setCreateForm({ ...createForm, agama: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {AGAMA_OPTIONS.map((agama) => (
+                  <option key={agama} value={agama}>{agama || "- Tidak diisi -"}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -749,6 +779,20 @@ export default function WargaAdminPage() {
                 onChange={(e) => setEditForm({ ...editForm, blok: e.target.value })}
                 className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Agama
+              </label>
+              <select
+                value={editForm.agama}
+                onChange={(e) => setEditForm({ ...editForm, agama: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {AGAMA_OPTIONS.map((agama) => (
+                  <option key={agama} value={agama}>{agama || "- Tidak diisi -"}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

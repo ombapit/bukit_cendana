@@ -24,6 +24,7 @@ func (s *WargaService) Create(req models.CreateWargaRequest) (*models.WargaRespo
 		Nama:         req.Nama,
 		Blok:         req.Blok,
 		NoTelp:       req.NoTelp,
+		Agama:        req.Agama,
 		Iuran:        req.Iuran,
 		KondisiRumah: req.KondisiRumah,
 	}
@@ -122,6 +123,7 @@ func (s *WargaService) Update(id uuid.UUID, req models.UpdateWargaRequest) (*mod
 	if req.NoTelp != "" {
 		warga.NoTelp = req.NoTelp
 	}
+	warga.Agama = req.Agama
 	if req.Iuran > 0 {
 		warga.Iuran = req.Iuran
 	}

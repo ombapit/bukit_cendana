@@ -23,6 +23,7 @@ export interface WargaExportRow {
   no: number;
   nama: string;
   blok: string;
+  agama: string;
   no_telp: string;
   iuran: number;
   last_payment_label: string;
@@ -51,6 +52,7 @@ export async function exportWargaXLS(
     { header: "No",                  key: "no",           width: 5  },
     { header: "Nama",                key: "nama",         width: 30 },
     { header: "Blok",                key: "blok",         width: 10 },
+    { header: "Agama",               key: "agama",        width: 16 },
     { header: "Iuran/Bulan (Rp)",    key: "iuran",        width: 18 },
     { header: "Pembayaran Terakhir", key: "last_payment", width: 22 },
   ];
@@ -60,6 +62,7 @@ export async function exportWargaXLS(
       no: r.no,
       nama: r.nama,
       blok: r.blok,
+      agama: r.agama,
       iuran: r.iuran,
       last_payment: r.last_payment_label,
     });
@@ -278,6 +281,9 @@ export async function exportWargaPDF(rows: {
     didParseCell: (data) => {
       if (data.row.index >= 0 && data.section === 'body') {
         const rowData = tableData[data.row.index];
+        if (data.column.index === 1) {
+          data.cell.styles.fillColor = [235, 225, 255];
+        }
         // Hanya warnai kolom TAGIHAN (index 4) dan KETERANGAN (index 5) jika ada warna
         if (rowData.bgColor && (data.column.index === 4 || data.column.index === 5)) {
           data.cell.styles.fillColor = rowData.bgColor;
