@@ -88,6 +88,10 @@ func (s *FinanceService) DeleteByReferensiID(referensiID uuid.UUID) error {
 	return s.financeRepo.DeleteByReferensiID(referensiID)
 }
 
+func (s *FinanceService) UpdateKreditFromIPL(iplID uuid.UUID, nominal float64) error {
+	return s.financeRepo.UpdateKreditByReferensiID(iplID, nominal)
+}
+
 // CreateFromIPL dipanggil otomatis saat IPL baru dibuat.
 func (s *FinanceService) CreateFromIPL(iplID uuid.UUID, wargaNama, wargaBlok, tanggalIPL string, iuran float64, tanggal time.Time) error {
 	periodeStr := tanggalIPL

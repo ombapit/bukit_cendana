@@ -119,3 +119,9 @@ func (r *FinanceRepository) Delete(id uuid.UUID) error {
 func (r *FinanceRepository) DeleteByReferensiID(referensiID uuid.UUID) error {
 	return r.db.Delete(&models.Finance{}, "referensi_id = ?", referensiID).Error
 }
+
+func (r *FinanceRepository) UpdateKreditByReferensiID(referensiID uuid.UUID, kredit float64) error {
+	return r.db.Model(&models.Finance{}).
+		Where("referensi_id = ? AND referensi_tipe = ?", referensiID, "ipl").
+		Updates(map[string]interface{}{"kredit": kredit, "updated_at": time.Now()}).Error
+}

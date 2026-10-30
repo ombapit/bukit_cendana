@@ -85,6 +85,9 @@ func (s *IPLService) Create(req models.CreateIPLRequest) ([]models.IPLResponse, 
 
 	results := make([]models.IPLResponse, 0, len(months))
 	for _, month := range months {
+		if req.Nominal != nil && *req.Nominal < 0 {
+			return nil, errors.New("nominal tidak boleh negatif")
+		}
 		ipl := &models.IPL{
 			WargaID:          req.WargaID,
 			TanggalIPL:       month,
@@ -103,6 +106,16 @@ func (s *IPLService) Create(req models.CreateIPLRequest) ([]models.IPLResponse, 
 		if err != nil {
 			return nil, err
 		}
+		nominal := created.Nominal
+		if req.Nominal != nil {
+			nominal = *req.Nominal
+		} else if created.Warga != nil {
+			nominal = created.Warga.Iuran
+		}
+		if err := s.iplRepo.UpdateNominal(created.ID, nominal); err != nil {
+			return nil, errors.New("failed to set IPL nominal")
+		}
+		created.Nominal = nominal
 
 		if s.financeService != nil && created.Warga != nil {
 			_ = s.financeService.CreateFromIPL(
@@ -110,7 +123,7 @@ func (s *IPLService) Create(req models.CreateIPLRequest) ([]models.IPLResponse, 
 				created.Warga.Nama,
 				created.Warga.Blok,
 				created.TanggalIPL,
-				created.Warga.Iuran,
+				nominal,
 				created.CreatedAt,
 			)
 		}
@@ -143,6 +156,12 @@ func (s *IPLService) Update(id uuid.UUID, req models.UpdateIPLRequest) (*models.
 	if req.TanggalIPL != "" {
 		ipl.TanggalIPL = req.TanggalIPL
 	}
+	if req.Nominal != nil {
+		if *req.Nominal < 0 {
+			return nil, errors.New("nominal tidak boleh negatif")
+		}
+		ipl.Nominal = *req.Nominal
+	}
 	metodePembayaran, err := normalizeMetodePembayaran(req.MetodePembayaran)
 	if err != nil {
 		return nil, err
@@ -155,6 +174,11 @@ func (s *IPLService) Update(id uuid.UUID, req models.UpdateIPLRequest) (*models.
 
 	if err := s.iplRepo.Update(ipl); err != nil {
 		return nil, errors.New("failed to update IPL")
+	}
+	if s.financeService != nil {
+		if err := s.financeService.UpdateKreditFromIPL(ipl.ID, ipl.Nominal); err != nil {
+			return nil, errors.New("failed to update IPL finance record")
+		}
 	}
 
 	updated, err := s.iplRepo.FindByID(id)

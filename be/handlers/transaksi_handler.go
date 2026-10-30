@@ -89,6 +89,7 @@ func (h *IPLHandler) FindAll(c *gin.Context) {
 // @Security    BearerAuth
 // @Param       warga_id    formData string true  "Warga ID"
 // @Param       tanggal_ipl formData string true  "Periode YYYYMM"
+// @Param       nominal     formData number false "Nominal IPL per bulan"
 // @Param       metode_pembayaran formData string true "Metode: cash, transfer, qris, atau lainnya"
 // @Param       gambar      formData file   false "Bukti pembayaran"
 // @Success     201 {object} utils.APIResponse{data=models.IPLResponse}
@@ -109,11 +110,21 @@ func (h *IPLHandler) Create(c *gin.Context) {
 	}
 
 	gambarPath := saveUploadedFile(c, "gambar")
+	var nominal *float64
+	if nominalStr := c.PostForm("nominal"); nominalStr != "" {
+		parsedNominal, parseErr := strconv.ParseFloat(nominalStr, 64)
+		if parseErr != nil || parsedNominal < 0 {
+			utils.ErrorResponse(c, http.StatusBadRequest, "nominal harus berupa angka positif")
+			return
+		}
+		nominal = &parsedNominal
+	}
 
 	req := models.CreateIPLRequest{
 		WargaID:          wargaID,
 		TanggalIPL:       tanggalIPL,
 		TanggalIPLEnd:    c.PostForm("tanggal_ipl_end"),
+		Nominal:          nominal,
 		MetodePembayaran: c.PostForm("metode_pembayaran"),
 		Gambar:           gambarPath,
 	}
@@ -140,6 +151,7 @@ func (h *IPLHandler) Create(c *gin.Context) {
 // @Security    BearerAuth
 // @Param       id          path     string true  "IPL ID"
 // @Param       tanggal_ipl formData string false "Periode YYYYMM"
+// @Param       nominal     formData number false "Nominal IPL per bulan"
 // @Param       metode_pembayaran formData string false "Metode: cash, transfer, qris, atau lainnya"
 // @Param       gambar      formData file   false "Bukti pembayaran"
 // @Success     200 {object} utils.APIResponse{data=models.IPLResponse}
@@ -165,6 +177,15 @@ func (h *IPLHandler) Update(c *gin.Context) {
 	if metodePembayaran == "" {
 		metodePembayaran = existing.MetodePembayaran
 	}
+	var nominal *float64
+	if nominalStr := c.PostForm("nominal"); nominalStr != "" {
+		parsedNominal, parseErr := strconv.ParseFloat(nominalStr, 64)
+		if parseErr != nil || parsedNominal < 0 {
+			utils.ErrorResponse(c, http.StatusBadRequest, "nominal harus berupa angka positif")
+			return
+		}
+		nominal = &parsedNominal
+	}
 
 	gambarPath := saveUploadedFile(c, "gambar")
 	if gambarPath == "" {
@@ -176,6 +197,7 @@ func (h *IPLHandler) Update(c *gin.Context) {
 
 	req := models.UpdateIPLRequest{
 		TanggalIPL:       tanggalIPL,
+		Nominal:          nominal,
 		MetodePembayaran: metodePembayaran,
 		Gambar:           gambarPath,
 		CreatedAt:        existing.CreatedAt,

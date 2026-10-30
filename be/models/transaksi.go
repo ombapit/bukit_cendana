@@ -17,6 +17,7 @@ type IPL struct {
 	ID               uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
 	WargaID          uuid.UUID `gorm:"type:uuid;not null" json:"warga_id"`
 	TanggalIPL       string    `gorm:"type:varchar(6);not null;column:tanggal_ipl" json:"tanggal_ipl"`
+	Nominal          float64   `gorm:"type:decimal(15,2);not null;default:0;column:nominal" json:"nominal"`
 	MetodePembayaran string    `gorm:"type:varchar(20);not null;default:lainnya;column:metode_pembayaran" json:"metode_pembayaran"`
 	Gambar           string    `gorm:"type:varchar(500)" json:"gambar"`
 	CreatedAt        time.Time `json:"created_at"`
@@ -34,6 +35,7 @@ type IPLResponse struct {
 	WargaNama        string    `gorm:"column:warga_nama"  json:"warga_nama"`
 	WargaBlok        string    `gorm:"column:warga_blok"  json:"warga_blok"`
 	TanggalIPL       string    `gorm:"column:tanggal_ipl" json:"tanggal_ipl"`
+	Nominal          float64   `gorm:"column:nominal"     json:"nominal"`
 	MetodePembayaran string    `gorm:"column:metode_pembayaran" json:"metode_pembayaran"`
 	Gambar           string    `gorm:"column:gambar"      json:"gambar"`
 	CreatedAt        time.Time `gorm:"column:created_at"  json:"created_at"`
@@ -52,6 +54,7 @@ func (t *IPL) ToResponse() IPLResponse {
 		WargaNama:        nama,
 		WargaBlok:        blok,
 		TanggalIPL:       t.TanggalIPL,
+		Nominal:          t.Nominal,
 		MetodePembayaran: t.MetodePembayaran,
 		Gambar:           t.Gambar,
 		CreatedAt:        t.CreatedAt,
@@ -62,6 +65,7 @@ type CreateIPLRequest struct {
 	WargaID          uuid.UUID `json:"warga_id"`
 	TanggalIPL       string    `json:"tanggal_ipl"`
 	TanggalIPLEnd    string    `json:"tanggal_ipl_end"`
+	Nominal          *float64  `json:"nominal"`
 	MetodePembayaran string    `json:"metode_pembayaran"`
 	Gambar           string    `json:"gambar"`
 	CreatedAt        time.Time `json:"created_at"`
@@ -69,6 +73,7 @@ type CreateIPLRequest struct {
 
 type UpdateIPLRequest struct {
 	TanggalIPL       string    `json:"tanggal_ipl"`
+	Nominal          *float64  `json:"nominal"`
 	MetodePembayaran string    `json:"metode_pembayaran"`
 	Gambar           string    `json:"gambar"`
 	CreatedAt        time.Time `json:"created_at"`
