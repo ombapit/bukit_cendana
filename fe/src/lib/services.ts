@@ -168,11 +168,12 @@ export const anggotaKeluargaService = {
 
 // ============ Finance ============
 export const financeService = {
-  getAll: (page = 1, limit = 20, search = "", dateFrom = "", dateTo = "") => {
+  getAll: (page = 1, limit = 20, search = "", dateFrom = "", dateTo = "", metodePembayaran = "") => {
     let url = `/finance?page=${page}&limit=${limit}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     if (dateFrom) url += `&date_from=${dateFrom}`;
     if (dateTo) url += `&date_to=${dateTo}`;
+    if (metodePembayaran) url += `&metode_pembayaran=${encodeURIComponent(metodePembayaran)}`;
     return api.get<APIResponse<Finance[]>>(url);
   },
 

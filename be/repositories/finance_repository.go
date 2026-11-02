@@ -27,30 +27,36 @@ func (r *FinanceRepository) FindByID(id uuid.UUID) (*models.Finance, error) {
 	return &f, err
 }
 
-func (r *FinanceRepository) FindAll(page, limit int, search, dateFrom, dateTo string) ([]models.Finance, int64, error) {
+func (r *FinanceRepository) FindAll(page, limit int, search, dateFrom, dateTo, metodePembayaran string) ([]models.Finance, int64, error) {
 	var results []models.Finance
 	var total int64
 
-	countQ := r.db.Model(&models.Finance{})
+	countQ := r.db.Table("finance").
+		Joins("LEFT JOIN ipls ON ipls.id = finance.referensi_id AND finance.referensi_tipe = ?", "ipl")
 	dataQ := r.db.Table("finance").
 		Select("finance.*, COALESCE(ipls.metode_pembayaran, '') AS metode_pembayaran").
 		Joins("LEFT JOIN ipls ON ipls.id = finance.referensi_id AND finance.referensi_tipe = ?", "ipl")
 
 	if search != "" {
 		like := "%" + search + "%"
-		countQ = countQ.Where("nama_transaksi ILIKE ? OR deskripsi ILIKE ? OR kategori ILIKE ?", like, like, like)
-		dataQ = dataQ.Where("nama_transaksi ILIKE ? OR deskripsi ILIKE ? OR kategori ILIKE ?", like, like, like)
+		searchQuery := "finance.nama_transaksi ILIKE ? OR finance.deskripsi ILIKE ? OR finance.kategori ILIKE ? OR ipls.metode_pembayaran ILIKE ?"
+		countQ = countQ.Where(searchQuery, like, like, like, like)
+		dataQ = dataQ.Where(searchQuery, like, like, like, like)
+	}
+	if metodePembayaran != "" {
+		countQ = countQ.Where("ipls.metode_pembayaran = ?", metodePembayaran)
+		dataQ = dataQ.Where("ipls.metode_pembayaran = ?", metodePembayaran)
 	}
 	if dateFrom != "" {
 		if t, err := time.Parse("2006-01-02", dateFrom); err == nil {
-			countQ = countQ.Where("tanggal >= ?", t)
-			dataQ = dataQ.Where("tanggal >= ?", t)
+			countQ = countQ.Where("finance.tanggal >= ?", t)
+			dataQ = dataQ.Where("finance.tanggal >= ?", t)
 		}
 	}
 	if dateTo != "" {
 		if t, err := time.Parse("2006-01-02", dateTo); err == nil {
-			countQ = countQ.Where("tanggal < ?", t.AddDate(0, 0, 1))
-			dataQ = dataQ.Where("tanggal < ?", t.AddDate(0, 0, 1))
+			countQ = countQ.Where("finance.tanggal < ?", t.AddDate(0, 0, 1))
+			dataQ = dataQ.Where("finance.tanggal < ?", t.AddDate(0, 0, 1))
 		}
 	}
 

@@ -42,8 +42,8 @@ func (s *FinanceService) Create(req models.CreateFinanceRequest) (*models.Financ
 	return f, s.financeRepo.Create(f)
 }
 
-func (s *FinanceService) FindAll(page, limit int, search, dateFrom, dateTo string) ([]models.Finance, int64, error) {
-	return s.financeRepo.FindAll(page, limit, search, dateFrom, dateTo)
+func (s *FinanceService) FindAll(page, limit int, search, dateFrom, dateTo, metodePembayaran string) ([]models.Finance, int64, error) {
+	return s.financeRepo.FindAll(page, limit, search, dateFrom, dateTo, metodePembayaran)
 }
 
 func (s *FinanceService) FindByID(id uuid.UUID) (*models.Finance, error) {

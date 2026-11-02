@@ -95,12 +95,12 @@ function isRoutineExpense(r: Finance): boolean {
   ].some((key) => text.includes(key));
 }
 
-async function getAllFinanceForRange(search: string, dateFrom: string, dateTo: string): Promise<Finance[]> {
+async function getAllFinanceForRange(search: string, dateFrom: string, dateTo: string, metodePembayaran = ""): Promise<Finance[]> {
   const limit = 100;
   let page = 1;
   const all: Finance[] = [];
   while (true) {
-    const res = await financeService.getAll(page, limit, search, dateFrom, dateTo);
+    const res = await financeService.getAll(page, limit, search, dateFrom, dateTo, metodePembayaran);
     const rows = res.data?.data || [];
     all.push(...rows);
     const totalPages = res.data?.meta?.total_pages || 1;
@@ -122,6 +122,7 @@ export default function FinancePage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [dateFrom, setDateFrom] = useState(firstOfMonthStr);
   const [dateTo, setDateTo] = useState(todayStr);
+  const [filterMetodePembayaran, setFilterMetodePembayaran] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -163,7 +164,7 @@ export default function FinancePage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const all = await getAllFinanceForRange(debouncedSearch, dateFrom, dateTo);
+      const all = await getAllFinanceForRange(debouncedSearch, dateFrom, dateTo, filterMetodePembayaran);
       const suffix = dateFrom && dateTo ? `_${dateFrom}_sd_${dateTo}` : "";
       const rows = all.map((r, i) => ({
         "No": i + 1,
@@ -386,13 +387,13 @@ export default function FinancePage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  useEffect(() => { setPage(1); }, [dateFrom, dateTo]);
+  useEffect(() => { setPage(1); }, [dateFrom, dateTo, filterMetodePembayaran]);
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
     try {
       const [listRes, sumRes] = await Promise.all([
-        financeService.getAll(page, limit, debouncedSearch, dateFrom, dateTo),
+        financeService.getAll(page, limit, debouncedSearch, dateFrom, dateTo, filterMetodePembayaran),
         financeService.getSummary(dateFrom, dateTo),
       ]);
       const body = listRes.data;
@@ -404,7 +405,7 @@ export default function FinancePage() {
       setRecords([]);
     }
     setLoading(false);
-  }, [page, debouncedSearch, dateFrom, dateTo]);
+  }, [page, debouncedSearch, dateFrom, dateTo, filterMetodePembayaran]);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
@@ -548,7 +549,7 @@ export default function FinancePage() {
       header: "Metode Pembayaran",
       render: (r: Finance) => (
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          {r.metode_pembayaran ? metodePembayaranLabel(r.metode_pembayaran) : "â€”"}
+          {r.metode_pembayaran ? metodePembayaranLabel(r.metode_pembayaran) : "Tidak ada"}
         </span>
       ),
     },
@@ -672,12 +673,26 @@ export default function FinancePage() {
       <div className="flex flex-col gap-3 mb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
-          <input type="text" placeholder="Cari transaksi, kategori..."
+          <input type="text" placeholder="Cari transaksi, kategori, atau metode pembayaran..."
             value={search} onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent backdrop-blur-sm dark:text-slate-100 dark:placeholder:text-gray-500"
           />
         </div>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+		  <div className="col-span-2 sm:col-auto flex items-center gap-1.5 min-w-0">
+			<label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Metode</label>
+			<select
+			  value={filterMetodePembayaran}
+			  onChange={(e) => setFilterMetodePembayaran(e.target.value)}
+			  className="w-full sm:w-auto px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+			>
+			  <option value="">Semua metode</option>
+			  <option value="cash">Cash</option>
+			  <option value="transfer">Transfer</option>
+			  <option value="qris">QRIS</option>
+			  <option value="lainnya">Lainnya</option>
+			</select>
+		  </div>
           <div className="flex items-center gap-1.5 min-w-0">
             <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Dari</label>
             <input type="date" value={dateFrom} max={dateTo || undefined}

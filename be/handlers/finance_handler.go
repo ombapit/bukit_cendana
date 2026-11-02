@@ -55,6 +55,11 @@ func (h *FinanceHandler) FindAll(c *gin.Context) {
 	search := c.DefaultQuery("search", "")
 	dateFrom := c.DefaultQuery("date_from", "")
 	dateTo := c.DefaultQuery("date_to", "")
+	metodePembayaran := strings.ToLower(c.DefaultQuery("metode_pembayaran", ""))
+	if metodePembayaran != "" && metodePembayaran != "cash" && metodePembayaran != "transfer" && metodePembayaran != "qris" && metodePembayaran != "lainnya" {
+		utils.ErrorResponse(c, http.StatusBadRequest, "metode_pembayaran tidak valid")
+		return
+	}
 	if page < 1 {
 		page = 1
 	}
@@ -62,7 +67,7 @@ func (h *FinanceHandler) FindAll(c *gin.Context) {
 		limit = 20
 	}
 
-	records, total, err := h.financeService.FindAll(page, limit, search, dateFrom, dateTo)
+	records, total, err := h.financeService.FindAll(page, limit, search, dateFrom, dateTo, metodePembayaran)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
