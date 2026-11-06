@@ -395,7 +395,7 @@ export default function FinancePage() {
     try {
       const [listRes, sumRes] = await Promise.all([
         financeService.getAll(page, limit, debouncedSearch, dateFrom, dateTo, filterMetodePembayaran),
-        financeService.getSummary(dateFrom, dateTo),
+        financeService.getSummary(dateFrom, dateTo, filterMetodePembayaran),
       ]);
       const body = listRes.data;
       setRecords(body?.data || []);

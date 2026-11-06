@@ -50,8 +50,8 @@ func (s *FinanceService) FindByID(id uuid.UUID) (*models.Finance, error) {
 	return s.financeRepo.FindByID(id)
 }
 
-func (s *FinanceService) GetSummary(dateFrom, dateTo string) (*models.FinanceSummary, error) {
-	return s.financeRepo.GetSummary(dateFrom, dateTo)
+func (s *FinanceService) GetSummary(dateFrom, dateTo, metodePembayaran string) (*models.FinanceSummary, error) {
+	return s.financeRepo.GetSummary(dateFrom, dateTo, metodePembayaran)
 }
 
 func (s *FinanceService) Update(id uuid.UUID, req models.UpdateFinanceRequest) (*models.Finance, error) {

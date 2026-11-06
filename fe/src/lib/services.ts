@@ -179,13 +179,16 @@ export const financeService = {
     return api.get<APIResponse<Finance[]>>(url);
   },
 
-  getSummary: (dateFrom = "", dateTo = "") => {
+  getSummary: (dateFrom = "", dateTo = "", metodePembayaran = "") => {
     let url = "/finance/summary";
     if (dateFrom || dateTo) {
       const params = new URLSearchParams();
       if (dateFrom) params.set("date_from", dateFrom);
       if (dateTo) params.set("date_to", dateTo);
+      if (metodePembayaran) params.set("metode_pembayaran", metodePembayaran);
       url += `?${params.toString()}`;
+    } else if (metodePembayaran) {
+      url += `?metode_pembayaran=${encodeURIComponent(metodePembayaran)}`;
     }
     return api.get<APIResponse<FinanceSummary>>(url);
   },

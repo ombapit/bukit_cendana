@@ -78,7 +78,12 @@ func (h *FinanceHandler) FindAll(c *gin.Context) {
 func (h *FinanceHandler) GetSummary(c *gin.Context) {
 	dateFrom := c.DefaultQuery("date_from", "")
 	dateTo := c.DefaultQuery("date_to", "")
-	summary, err := h.financeService.GetSummary(dateFrom, dateTo)
+	metodePembayaran := strings.ToLower(c.DefaultQuery("metode_pembayaran", ""))
+	if metodePembayaran != "" && metodePembayaran != "cash" && metodePembayaran != "transfer" && metodePembayaran != "qris" && metodePembayaran != "lainnya" {
+		utils.ErrorResponse(c, http.StatusBadRequest, "metode_pembayaran tidak valid")
+		return
+	}
+	summary, err := h.financeService.GetSummary(dateFrom, dateTo, metodePembayaran)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return

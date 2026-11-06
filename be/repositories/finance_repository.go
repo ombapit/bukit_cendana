@@ -67,11 +67,14 @@ func (r *FinanceRepository) FindAll(page, limit int, search, dateFrom, dateTo, m
 	return results, total, err
 }
 
-func (r *FinanceRepository) GetSummary(dateFrom, dateTo string) (*models.FinanceSummary, error) {
+func (r *FinanceRepository) GetSummary(dateFrom, dateTo, metodePembayaran string) (*models.FinanceSummary, error) {
 	var summary models.FinanceSummary
 
 	// Pemasukan & pengeluaran: sesuai filter tanggal
 	q := r.db.Model(&models.Finance{})
+	if metodePembayaran != "" {
+		q = q.Joins("LEFT JOIN ipls ON ipls.id = finance.referensi_id AND finance.referensi_tipe = ?", "ipl").Where("ipls.metode_pembayaran = ?", metodePembayaran)
+	}
 	if dateFrom != "" {
 		if t, err := time.Parse("2006-01-02", dateFrom); err == nil {
 			q = q.Where("tanggal >= ?", t)
@@ -95,9 +98,11 @@ func (r *FinanceRepository) GetSummary(dateFrom, dateTo string) (*models.Finance
 
 	// Saldo: akumulatif semua transaksi (tidak difilter)
 	var saldoResult struct{ Saldo float64 }
-	if err := r.db.Model(&models.Finance{}).
-		Select("COALESCE(SUM(kredit)-SUM(debit),0) as saldo").
-		Scan(&saldoResult).Error; err != nil {
+	saldoQ := r.db.Model(&models.Finance{})
+	if metodePembayaran != "" {
+		saldoQ = saldoQ.Joins("LEFT JOIN ipls ON ipls.id = finance.referensi_id AND finance.referensi_tipe = ?", "ipl").Where("ipls.metode_pembayaran = ?", metodePembayaran)
+	}
+	if err := saldoQ.Select("COALESCE(SUM(kredit)-SUM(debit),0) as saldo").Scan(&saldoResult).Error; err != nil {
 		return nil, err
 	}
 	summary.Saldo = saldoResult.Saldo
