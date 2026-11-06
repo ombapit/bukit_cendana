@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { iplService, wargaService } from "@/lib/services";
 import { Button } from "@/components/ui/button";
+import { SkeletonTable } from "@/components/ui/skeleton";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
 import type { IPL, WargaWithLastPayment } from "@/types";
@@ -15,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ImageIcon,
+  CalendarDays,
 } from "lucide-react";
 
 const bulanIndonesia: Record<string, string> = {
@@ -67,6 +69,99 @@ function getImageURL(gambar: string): string {
   if (!gambar) return "";
   const base = (process.env.NEXT_PUBLIC_API_URL ?? "").replace("/api/v1", "");
   return `${base}${gambar}`;
+}
+
+type MonthInputProps = {
+  value: string;
+  min?: string;
+  onChange: (value: string) => void;
+  label: string;
+};
+
+function MonthInput({ value, min, onChange, label }: MonthInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => Number(value.slice(0, 4)) || new Date().getFullYear());
+
+  const focusOrOpenPicker = () => {
+    const input = inputRef.current;
+    if (!input) return;
+    if (input.type === "month" && typeof input.showPicker === "function") {
+      input.focus();
+      input.showPicker();
+      return;
+    }
+    setPickerYear(Number(value.slice(0, 4)) || new Date().getFullYear());
+    setPickerOpen((open) => !open);
+  };
+
+  const pilihBulan = (bulan: string) => {
+    onChange(`${pickerYear}-${bulan}`);
+    setPickerOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="month"
+        value={value}
+        min={min}
+        placeholder="YYYY-MM"
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 pr-10 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <button
+        type="button"
+        onClick={focusOrOpenPicker}
+        className="firefox-month-picker-button absolute inset-y-0 right-0 items-center justify-center w-10 text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400"
+        aria-label={`Pilih ${label}`}
+        title={`Pilih ${label}`}
+      >
+        <CalendarDays className="w-4 h-4" />
+      </button>
+      {pickerOpen && (
+        <div className="absolute z-50 top-full right-0 mt-1 w-64 rounded-lg border border-white/20 dark:border-white/10 bg-white dark:bg-gray-900 shadow-xl p-3">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              type="button"
+              onClick={() => setPickerYear((year) => year - 1)}
+              className="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-white/10"
+              aria-label="Tahun sebelumnya"
+            >
+              ‹
+            </button>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{pickerYear}</span>
+            <button
+              type="button"
+              onClick={() => setPickerYear((year) => year + 1)}
+              className="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-white/10"
+              aria-label="Tahun berikutnya"
+            >
+              ›
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-1">
+            {Object.entries(bulanIndonesia).map(([bulan, nama]) => {
+              const bulanDipilih = `${pickerYear}-${bulan}`;
+              const disabled = Boolean(min && bulanDipilih < min);
+              return (
+                <button
+                  key={bulan}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => pilihBulan(bulan)}
+                  className={`px-2 py-1.5 rounded text-xs transition-colors ${bulanDipilih === value ? "bg-red-700 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-red-700/10 dark:hover:bg-red-700/20"} disabled:cursor-not-allowed disabled:opacity-40`}
+                >
+                  {nama.slice(0, 3)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 const metodePembayaranLabels = {
@@ -449,9 +544,7 @@ export default function IPLListPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-red-700" />
-        </div>
+        <SkeletonTable rows={7} columns={7} />
       ) : (
         <>
           {/* Mobile: cards */}
@@ -604,21 +697,19 @@ export default function IPLListPage() {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Dari bulan</p>
-                <input
-                  type="month"
+                <MonthInput
                   value={createForm.tanggal_ipl_start}
-                  onChange={(e) => setCreateForm({ ...createForm, tanggal_ipl_start: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  label="bulan awal"
+                  onChange={(tanggal_ipl_start) => setCreateForm({ ...createForm, tanggal_ipl_start })}
                 />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Sampai bulan</p>
-                <input
-                  type="month"
+                <MonthInput
                   value={createForm.tanggal_ipl_end}
                   min={createForm.tanggal_ipl_start}
-                  onChange={(e) => setCreateForm({ ...createForm, tanggal_ipl_end: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  label="bulan akhir"
+                  onChange={(tanggal_ipl_end) => setCreateForm({ ...createForm, tanggal_ipl_end })}
                 />
               </div>
             </div>
@@ -736,11 +827,10 @@ export default function IPLListPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Periode IPL
               </label>
-              <input
-                type="month"
+              <MonthInput
                 value={editForm.tanggal_ipl}
-                onChange={(e) => setEditForm({ ...editForm, tanggal_ipl: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                label="periode IPL"
+                onChange={(tanggal_ipl) => setEditForm({ ...editForm, tanggal_ipl })}
               />
             </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { roleService, permissionService } from "@/lib/services";
 import { Button } from "@/components/ui/button";
+import { SkeletonTable } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Badge } from "@/components/ui/badge";
@@ -129,7 +130,7 @@ export default function RolesPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>
+        <SkeletonTable rows={6} columns={4} />
       ) : (
         <Table columns={columns} data={roles as Role[]} />
       )}

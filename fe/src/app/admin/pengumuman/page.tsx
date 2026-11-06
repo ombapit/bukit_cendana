@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { pengumumanService } from "@/lib/services";
+import { pengumumanKategoriService, pengumumanService } from "@/lib/services";
 import { Button } from "@/components/ui/button";
+import { SkeletonTable } from "@/components/ui/skeleton";
 import { Modal } from "@/components/ui/modal";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
-import type { Pengumuman } from "@/types";
-import { Plus, Pencil, Trash2, Search, Loader2, Eye, EyeOff, Tag } from "lucide-react";
-
-const KATEGORI_LIST = ["Umum", "Keamanan", "Kebersihan", "Kegiatan", "Penting", "Keuangan"];
+import type { Pengumuman, PengumumanKategori } from "@/types";
+import { Plus, Pencil, Trash2, Search, Loader2, Eye, EyeOff, Tag, Settings } from "lucide-react";
 
 const inputClass = "w-full px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
 const fileInputClass = "w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-red-700/10 file:text-red-700 dark:file:text-red-400 dark:file:bg-red-700/20 hover:file:bg-red-700/20 cursor-pointer";
@@ -33,6 +32,12 @@ export default function PengumumanAdminPage() {
   const [kategoriFilter, setKategoriFilter] = useState("");
   const [total, setTotal] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
+  const [categories, setCategories] = useState<PengumumanKategori[]>([]);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categoryName, setCategoryName] = useState("");
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [categoryError, setCategoryError] = useState("");
+  const [categoryBusy, setCategoryBusy] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState(emptyForm);
@@ -73,6 +78,15 @@ export default function PengumumanAdminPage() {
     const t = setTimeout(() => fetchRecords(), 400);
     return () => clearTimeout(t);
   }, [fetchRecords]);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await pengumumanKategoriService.getAll();
+      setCategories(res.data?.data || []);
+    } catch { setCategories([]); }
+  }, []);
+
+  useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
   const openCreate = () => {
     setCreateForm(emptyForm);
@@ -163,6 +177,36 @@ export default function PengumumanAdminPage() {
     } catch { /* ignore */ }
   };
 
+  const openCategoryManager = () => {
+    setCategoryName("");
+    setEditingCategoryId(null);
+    setCategoryError("");
+    setCategoryOpen(true);
+  };
+
+  const saveCategory = async () => {
+    if (!categoryName.trim()) { setCategoryError("Nama kategori wajib diisi"); return; }
+    setCategoryBusy(true); setCategoryError("");
+    try {
+      if (editingCategoryId) await pengumumanKategoriService.update(editingCategoryId, categoryName.trim());
+      else await pengumumanKategoriService.create(categoryName.trim());
+      await fetchCategories();
+      setCategoryName(""); setEditingCategoryId(null);
+      showSuccess(editingCategoryId ? "Kategori berhasil diperbarui" : "Kategori berhasil ditambahkan");
+    } catch { setCategoryError("Gagal menyimpan kategori. Pastikan nama belum digunakan."); }
+    setCategoryBusy(false);
+  };
+
+  const deleteCategory = async (category: PengumumanKategori) => {
+    if (!window.confirm(`Hapus kategori ${category.nama}?`)) return;
+    try {
+      await pengumumanKategoriService.delete(category.id);
+      if (kategoriFilter === category.nama) setKategoriFilter("");
+      await fetchCategories();
+      showSuccess("Kategori berhasil dihapus");
+    } catch { setCategoryError("Gagal menghapus kategori"); }
+  };
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -170,10 +214,16 @@ export default function PengumumanAdminPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pengumuman</h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{total} pengumuman tercatat</p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah Pengumuman
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Pengumuman
+          </Button>
+          <Button variant="outline" onClick={openCategoryManager}>
+            <Settings className="w-4 h-4 mr-2" />
+            Kelola Kategori
+          </Button>
+        </div>
       </div>
 
       {successMsg && (
@@ -191,12 +241,12 @@ export default function PengumumanAdminPage() {
         <select value={kategoriFilter} onChange={(e) => setKategoriFilter(e.target.value)}
           className="min-w-0 px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white">
           <option value="">Semua Kategori</option>
-          {KATEGORI_LIST.map((k) => <option key={k} value={k}>{k}</option>)}
+          {categories.map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
         </select>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-red-700" /></div>
+        <SkeletonTable rows={6} columns={5} />
       ) : records.length === 0 ? (
         <p className="text-center text-gray-500 dark:text-gray-400 py-12">Tidak ada pengumuman</p>
       ) : (
@@ -265,7 +315,7 @@ export default function PengumumanAdminPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kategori</label>
               <select value={createForm.kategori} onChange={(e) => setCreateForm({ ...createForm, kategori: e.target.value })} className={inputClass}>
                 <option value="">-- Pilih --</option>
-                {KATEGORI_LIST.map((k) => <option key={k} value={k}>{k}</option>)}
+                {categories.map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
               </select>
             </div>
             <div>
@@ -308,7 +358,7 @@ export default function PengumumanAdminPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kategori</label>
               <select value={editForm.kategori} onChange={(e) => setEditForm({ ...editForm, kategori: e.target.value })} className={inputClass}>
                 <option value="">-- Pilih --</option>
-                {KATEGORI_LIST.map((k) => <option key={k} value={k}>{k}</option>)}
+                {categories.map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
               </select>
             </div>
             <div>
@@ -342,6 +392,44 @@ export default function PengumumanAdminPage() {
           <div className="flex justify-end gap-2 pt-4 border-t border-white/20 dark:border-white/10">
             <Button variant="outline" onClick={() => setEditOpen(false)}>Batal</Button>
             <Button onClick={handleEdit} loading={editing}>Simpan Perubahan</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: Category manager */}
+      <Modal open={categoryOpen} onClose={() => setCategoryOpen(false)} title="Kelola Kategori Pengumuman" size="sm">
+        <div className="space-y-4">
+          {categoryError && <div className="bg-rose-500/10 text-rose-700 dark:text-rose-400 text-sm p-3 rounded-xl border border-rose-500/20">{categoryError}</div>}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={categoryName}
+              onChange={(e) => setCategoryName(e.target.value)}
+              placeholder="Nama kategori baru"
+              className={inputClass}
+              onKeyDown={(e) => { if (e.key === "Enter") saveCategory(); }}
+            />
+            <Button onClick={saveCategory} loading={categoryBusy}>{editingCategoryId ? "Simpan" : "Tambah"}</Button>
+          </div>
+          <div className="divide-y divide-white/20 dark:divide-white/10 border border-white/20 dark:border-white/10 rounded-lg">
+            {categories.length === 0 ? (
+              <p className="p-3 text-sm text-gray-500 dark:text-gray-400">Belum ada kategori.</p>
+            ) : categories.map((category) => (
+              <div key={category.id} className="flex items-center justify-between gap-2 p-3">
+                <span className="text-sm text-gray-800 dark:text-gray-200">{category.nama}</span>
+                <div className="flex gap-1">
+                  <button type="button" onClick={() => { setEditingCategoryId(category.id); setCategoryName(category.nama); setCategoryError(""); }} className="p-1.5 rounded hover:bg-blue-500/10" title="Edit kategori">
+                    <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button type="button" onClick={() => deleteCategory(category)} className="p-1.5 rounded hover:bg-rose-500/10" title="Hapus kategori">
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => setCategoryOpen(false)}>Tutup</Button>
           </div>
         </div>
       </Modal>

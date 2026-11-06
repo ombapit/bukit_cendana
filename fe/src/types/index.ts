@@ -5,6 +5,17 @@ export interface APIResponse<T = unknown> {
   meta?: Meta;
 }
 
+export interface IPLPaymentInitiation {
+  reference_id: string;
+  payment_url: string;
+  jumlah_bulan: number;
+  total_amount: number;
+  warga_nama: string;
+  warga_blok: string;
+  tanggal_ipl_start: string;
+  tanggal_ipl_end: string;
+}
+
 export interface Meta {
   page: number;
   limit: number;
@@ -256,12 +267,20 @@ export interface UpdateFinanceRequest {
 export interface Pengumuman {
   id: string;
   judul: string;
+  slug: string;
   konten: string;
   gambar: string;
   kategori: string;
   tags: string;
   is_published: boolean;
   created_by_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PengumumanKategori {
+  id: string;
+  nama: string;
   created_at: string;
   updated_at: string;
 }

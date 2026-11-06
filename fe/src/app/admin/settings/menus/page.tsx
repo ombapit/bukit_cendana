@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { menuService, permissionService } from "@/lib/services";
 import { Button } from "@/components/ui/button";
+import { SkeletonTable } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
@@ -324,7 +325,7 @@ export default function MenusPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" /></div>
+        <SkeletonTable rows={7} columns={5} />
       ) : (
         <div className="glass rounded-2xl">
           {menus.length === 0 ? (

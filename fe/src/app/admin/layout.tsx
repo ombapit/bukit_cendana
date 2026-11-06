@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/contexts/sidebar-context";
 import { Sidebar } from "@/components/admin/sidebar";
 import { Topbar } from "@/components/admin/topbar";
 import { PermissionGuard } from "@/components/admin/permission-guard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -21,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <div className="w-full max-w-3xl space-y-4 px-6"><Skeleton className="h-10 w-48" /><Skeleton className="h-64 w-full" /></div>
       </div>
     );
   }

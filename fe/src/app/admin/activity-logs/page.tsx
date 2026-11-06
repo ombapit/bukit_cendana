@@ -7,6 +7,7 @@ import type { ActivityLog } from "@/types";
 import { Search, Loader2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PermissionGuard } from "@/components/admin/permission-guard";
+import { SkeletonTable } from "@/components/ui/skeleton";
 
 function formatDate(iso: string) {
   if (!iso) return "-";
@@ -158,9 +159,7 @@ export default function ActivityLogsPage() {
 
         {/* Table */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          </div>
+          <SkeletonTable rows={8} columns={6} />
         ) : (
           <>
             <Table columns={columns} data={numberedLogs} emptyMessage="Belum ada aktivitas tercatat" />

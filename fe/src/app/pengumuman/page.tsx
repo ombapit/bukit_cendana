@@ -1,15 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { pengumumanService } from "@/lib/services";
 import type { Pengumuman } from "@/types";
-import { Search, Loader2, ArrowLeft, Tag, Calendar, User } from "lucide-react";
+import { Search, ArrowLeft, Tag, Calendar, User } from "lucide-react";
 import { PublicNavbar } from "@/components/public-navbar";
 import { PublicFooter } from "@/components/public-footer";
 import Link from "next/link";
-
-const KATEGORI_LIST = ["Umum", "Keamanan", "Kebersihan", "Kegiatan", "Penting", "Keuangan"];
+import { Skeleton } from "@/components/ui/skeleton";
 
 function getImageURL(gambar: string): string {
   if (!gambar) return "";
@@ -44,7 +43,7 @@ function cleanHtml(html: string) {
     .replace(/ /g, " ");
 }
 
-function PengumumanContent() {
+export function PengumumanContent({ initialSlug = "" }: { initialSlug?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [records, setRecords] = useState<Pengumuman[]>([]);
@@ -53,36 +52,75 @@ function PengumumanContent() {
   const [kategoriFilter, setKategoriFilter] = useState("");
   const [selected, setSelected] = useState<Pengumuman | null>(null);
   const [initialIdHandled, setInitialIdHandled] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef(false);
   const fromHome = searchParams.get("from") === "home";
 
-  const fetchRecords = useCallback(async () => {
-    setLoading(true);
+  const fetchRecords = useCallback(async (pageToLoad: number, reset = false) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    if (reset) setLoading(true);
+    else setLoadingMore(true);
     try {
-      const res = await pengumumanService.getAll(1, 100, search, kategoriFilter, true);
+      const res = await pengumumanService.getAll(pageToLoad, 12, search, kategoriFilter, true);
       const data: Pengumuman[] = res.data?.data || [];
-      setRecords(data);
+      setRecords((prev) => reset ? data : [...prev, ...data]);
+      const meta = res.data?.meta;
+      setHasMore(meta ? pageToLoad < (meta.total_pages ?? pageToLoad) : data.length === 12);
+      setPage(pageToLoad);
 
       if (!initialIdHandled) {
         const idParam = searchParams.get("id");
-        if (idParam) {
+        const slugParam = initialSlug || searchParams.get("slug");
+        if (slugParam) {
+          try {
+            const detail = await pengumumanService.getBySlug(slugParam);
+            setSelected(detail.data?.data || null);
+          } catch { /* keep list visible when slug is stale */ }
+        } else if (idParam) {
           const found = data.find((r) => r.id === idParam);
           if (found) setSelected(found);
         }
         setInitialIdHandled(true);
       }
-    } catch { setRecords([]); }
-    setLoading(false);
+    } catch {
+      if (reset) setRecords([]);
+      setHasMore(false);
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
+      setLoadingMore(false);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, kategoriFilter]);
+  }, [search, kategoriFilter, initialIdHandled]);
 
   useEffect(() => {
-    const t = setTimeout(() => fetchRecords(), 300);
+    const t = setTimeout(() => {
+      setRecords([]);
+      setPage(1);
+      setHasMore(true);
+      fetchRecords(1, true);
+    }, 300);
     return () => clearTimeout(t);
-  }, [fetchRecords]);
+  }, [search, kategoriFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || selected || loading || !hasMore) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !loadingRef.current) fetchRecords(page + 1);
+    }, { rootMargin: "300px" });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [fetchRecords, hasMore, loading, page, selected]);
 
   const openDetail = (r: Pengumuman) => {
     setSelected(r);
-    router.replace(`/pengumuman?id=${r.id}`, { scroll: false });
+    if (r.slug) router.replace(`/pengumuman/${encodeURIComponent(r.slug)}`, { scroll: false });
+    else router.replace(`/pengumuman?id=${r.id}`, { scroll: false });
   };
 
   const closeDetail = () => {
@@ -184,13 +222,18 @@ function PengumumanContent() {
           className="w-full sm:w-44 px-3 py-2.5 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white"
         >
           <option value="">Semua Kategori</option>
-          {KATEGORI_LIST.map((k) => <option key={k} value={k}>{k}</option>)}
+          {Array.from(new Set(records.map((r) => r.kategori).filter(Boolean))).sort().map((k) => <option key={k} value={k}>{k}</option>)}
         </select>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-red-700" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-label="Memuat pengumuman">
+          {Array.from({ length: 6 }, (_, index) => (
+            <div key={index} className="glass rounded-2xl overflow-hidden">
+              <Skeleton className="w-full h-40 rounded-none" />
+              <div className="p-4 space-y-3"><Skeleton className="h-3 w-1/4" /><Skeleton className="h-4 w-4/5" /><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-2/5" /></div>
+            </div>
+          ))}
         </div>
       ) : records.length === 0 ? (
         <p className="text-center text-gray-500 dark:text-gray-400 py-12">Belum ada pengumuman</p>
@@ -235,6 +278,12 @@ function PengumumanContent() {
               </div>
             </button>
           ))}
+        <div ref={loadMoreRef} className="flex justify-center py-6" aria-live="polite">
+          {loadingMore && <Skeleton className="h-6 w-24" />}
+          {!hasMore && records.length > 0 && (
+            <span className="text-xs text-gray-400 dark:text-gray-500">Semua pengumuman telah ditampilkan</span>
+          )}
+        </div>
         </div>
       )}
     </div>
@@ -246,7 +295,7 @@ export default function PengumumanPage() {
     <div className="min-h-screen flex flex-col">
       <PublicNavbar />
       <div className="flex-1">
-        <Suspense fallback={<div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-red-700" /></div>}>
+        <Suspense fallback={<div className="max-w-5xl mx-auto px-4 py-8"><Skeleton className="h-8 w-56 mb-6" /><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><Skeleton className="h-56" /><Skeleton className="h-56" /></div></div>}>
           <PengumumanContent />
         </Suspense>
       </div>

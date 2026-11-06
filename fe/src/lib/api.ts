@@ -14,7 +14,6 @@ const PUBLIC_GET_ENDPOINTS = [
   "/anggota-keluarga",
   "/penerima-qurban",
   "/ipl-payments",
-  "/activity-logs",
   "/auth/login",
   "/auth/refresh",
 ];

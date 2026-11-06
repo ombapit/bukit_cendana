@@ -43,5 +43,3 @@ Thumbs.db
 # ── Misc ─────────────────────────────────────
 coverage/
 .cache/
-doc/Database_Warga_Bukit_Cendana_Qurban.xlsx
-doc/*.py

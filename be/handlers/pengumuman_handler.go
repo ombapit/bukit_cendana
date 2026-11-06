@@ -83,6 +83,15 @@ func (h *PengumumanHandler) FindByID(c *gin.Context) {
 	utils.SuccessResponse(c, "Pengumuman found", p)
 }
 
+func (h *PengumumanHandler) FindBySlug(c *gin.Context) {
+	p, err := h.service.FindBySlug(c.Param("slug"), true)
+	if err != nil {
+		utils.NotFoundResponse(c, "Pengumuman not found")
+		return
+	}
+	utils.SuccessResponse(c, "Pengumuman found", p)
+}
+
 func (h *PengumumanHandler) Create(c *gin.Context) {
 	judul := c.PostForm("judul")
 	if judul == "" {

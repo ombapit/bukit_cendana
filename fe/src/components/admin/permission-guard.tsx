@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { ShieldX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/contexts/locale-context";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PermissionGuardProps {
   children: React.ReactNode;
@@ -31,9 +32,7 @@ export function PermissionGuard({ children }: PermissionGuardProps) {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-      </div>
+      <div className="space-y-4 py-8"><Skeleton className="h-8 w-48" /><Skeleton className="h-24 w-full" /></div>
     );
   }
 

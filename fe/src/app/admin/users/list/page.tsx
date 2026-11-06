@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { userService, roleService } from "@/lib/services";
 import { Button } from "@/components/ui/button";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
@@ -334,9 +336,7 @@ export default function UsersPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-        </div>
+        <SkeletonTable rows={8} columns={6} />
       ) : (
         <>
           <Table columns={columns} data={filteredUsers as UserResponse[]} />
@@ -480,9 +480,7 @@ export default function UsersPage() {
       {/* ========== Modal: Detail ========== */}
       <Modal open={detailOpen} onClose={() => setDetailOpen(false)} title={t.users.userDetail} size="md">
         {detailLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-          </div>
+          <div className="space-y-4 py-4"><Skeleton className="h-12 w-full" /><Skeleton className="h-32 w-full" /><Skeleton className="h-12 w-3/4" /></div>
         ) : detailUser ? (
           <div className="space-y-4">
             <div className="bg-gradient-to-r from-red-700/10 to-rose-600/10 dark:from-red-700/20 dark:to-rose-600/20 rounded-lg p-4">

@@ -25,6 +25,7 @@ func Setup(
 	iplPaymentHandler *handlers.IPLPaymentHandler,
 	financeHandler *handlers.FinanceHandler,
 	pengumumanHandler *handlers.PengumumanHandler,
+	pengumumanKategoriHandler *handlers.PengumumanKategoriHandler,
 	qurbanHandler *handlers.QurbanHandler,
 	penerimaQurbanHandler *handlers.PenerimaQurbanHandler,
 	activityLogHandler *handlers.ActivityLogHandler,
@@ -83,6 +84,7 @@ func Setup(
 	publicPengumuman := api.Group("/pengumuman")
 	{
 		publicPengumuman.GET("", pengumumanHandler.FindAll)
+		publicPengumuman.GET("/slug/:slug", pengumumanHandler.FindBySlug)
 		publicPengumuman.GET("/:id", pengumumanHandler.FindByID)
 	}
 
@@ -131,6 +133,10 @@ func Setup(
 		protected.DELETE("/finance/:id", middleware.RBACMiddleware(authService, "finance.delete"), financeHandler.Delete)
 
 		// === Pengumuman (write operations; reads are public above) ===
+		protected.GET("/pengumuman-kategori", middleware.RBACMiddleware(authService, "pengumuman.view"), pengumumanKategoriHandler.FindAll)
+		protected.POST("/pengumuman-kategori", middleware.RBACMiddleware(authService, "pengumuman.create"), pengumumanKategoriHandler.Create)
+		protected.PUT("/pengumuman-kategori/:id", middleware.RBACMiddleware(authService, "pengumuman.update"), pengumumanKategoriHandler.Update)
+		protected.DELETE("/pengumuman-kategori/:id", middleware.RBACMiddleware(authService, "pengumuman.delete"), pengumumanKategoriHandler.Delete)
 		protected.POST("/pengumuman", middleware.RBACMiddleware(authService, "pengumuman.create"), pengumumanHandler.Create)
 		protected.PUT("/pengumuman/:id", middleware.RBACMiddleware(authService, "pengumuman.update"), pengumumanHandler.Update)
 		protected.DELETE("/pengumuman/:id", middleware.RBACMiddleware(authService, "pengumuman.delete"), pengumumanHandler.Delete)

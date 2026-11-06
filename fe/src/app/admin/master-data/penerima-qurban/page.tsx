@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { penerimaQurbanService } from "@/lib/services";
 import { generateKuponQurbanPDF } from "@/lib/kupon-qurban";
 import { Button } from "@/components/ui/button";
+import { SkeletonTable } from "@/components/ui/skeleton";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
 import type { PenerimaQurban } from "@/types";
@@ -427,9 +428,7 @@ export default function PenerimaQurbanPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-red-700" />
-        </div>
+        <SkeletonTable rows={7} columns={6} />
       ) : (
         <>
           <div className="lg:hidden space-y-3">

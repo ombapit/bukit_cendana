@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Users, FileText, Bell } from "lucide-react";
+import { Users, FileText, Bell, CreditCard } from "lucide-react";
 import { PublicNavbar } from "@/components/public-navbar";
 import { PublicFooter } from "@/components/public-footer";
 import { useLocale } from "@/contexts/locale-context";
@@ -34,6 +34,7 @@ export default function LandingPage() {
     { icon: Users, title: t.landing.features.warga.title, desc: t.landing.features.warga.desc, href: "/warga" },
     { icon: Bell, title: t.landing.features.pengumuman.title, desc: t.landing.features.pengumuman.desc, href: "/pengumuman" },
     { icon: FileText, title: t.landing.features.laporan.title, desc: t.landing.features.laporan.desc, href: "/laporan" },
+    { icon: CreditCard, title: "Bayar IPL", desc: "Bayar iuran IPL secara online", href: "/bayar-ipl" },
   ];
 
   return (
@@ -95,9 +96,9 @@ export default function LandingPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {latestPengumuman.map((p) => (
-                <Link key={p.id} href={`/pengumuman?id=${p.id}&from=home`} className="glass rounded-2xl overflow-hidden hover:shadow-lg hover:shadow-red-700/10 hover:-translate-y-0.5 transition-all duration-200">
+                <Link key={p.id} href={p.slug ? `/pengumuman/${encodeURIComponent(p.slug)}?from=home` : `/pengumuman?id=${p.id}&from=home`} className="glass rounded-2xl overflow-hidden hover:shadow-lg hover:shadow-red-700/10 hover:-translate-y-0.5 transition-all duration-200">
                   {p.gambar ? (
-                    <img src={getImageURL(p.gambar)} alt={p.judul} className="w-full h-36 object-cover" />
+                    <img src={getImageURL(p.gambar)} alt={p.judul} className="w-full h-36 object-cover object-[center_25%]" />
                   ) : (
                     <div className="w-full h-36 bg-gradient-to-br from-red-700/10 to-rose-600/10 dark:from-red-700/20 dark:to-rose-600/20 flex items-center justify-center">
                       <span className="text-3xl">📢</span>
@@ -118,6 +119,11 @@ export default function LandingPage() {
                   </div>
                 </Link>
               ))}
+            </div>
+            <div className="mt-6 text-center sm:hidden">
+              <Link href="/pengumuman" className="inline-flex items-center justify-center w-full rounded-lg border border-red-700/30 px-4 py-2.5 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-700/10">
+                Lihat semua pengumuman →
+              </Link>
             </div>
           </div>
         </section>

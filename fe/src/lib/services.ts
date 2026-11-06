@@ -4,6 +4,7 @@ import type {
   Finance,
   FinanceSummary,
   Pengumuman,
+  PengumumanKategori,
   LoginRequest,
   LoginResponse,
   CreateUserRequest,
@@ -23,6 +24,7 @@ import type {
   WargaResponse,
   CreateWargaRequest,
   UpdateWargaRequest,
+  IPLPaymentInitiation,
   AnggotaKeluarga,
   IPL,
   PengambilanQurban,
@@ -215,6 +217,9 @@ export const pengumumanService = {
   getById: (id: string) =>
     api.get<APIResponse<Pengumuman>>(`/pengumuman/${id}`),
 
+  getBySlug: (slug: string) =>
+    api.get<APIResponse<Pengumuman>>(`/pengumuman/slug/${encodeURIComponent(slug)}`),
+
   create: (data: FormData) =>
     api.post<APIResponse<Pengumuman>>("/pengumuman", data, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -227,6 +232,13 @@ export const pengumumanService = {
 
   delete: (id: string) =>
     api.delete<APIResponse>(`/pengumuman/${id}`),
+};
+
+export const pengumumanKategoriService = {
+  getAll: () => api.get<APIResponse<PengumumanKategori[]>>("/pengumuman-kategori"),
+  create: (nama: string) => api.post<APIResponse<PengumumanKategori>>("/pengumuman-kategori", { nama }),
+  update: (id: string, nama: string) => api.put<APIResponse<PengumumanKategori>>(`/pengumuman-kategori/${id}`, { nama }),
+  delete: (id: string) => api.delete<APIResponse>(`/pengumuman-kategori/${id}`),
 };
 
 // ============ IPL ============
@@ -250,6 +262,13 @@ export const iplService = {
 
   delete: (id: string) =>
     api.delete<APIResponse>(`/ipls/${id}`),
+};
+
+export const iplPaymentService = {
+  initiate: (data: { warga_id: string; tanggal_ipl: string; tanggal_ipl_end: string }) =>
+    api.post<APIResponse<IPLPaymentInitiation>>("/ipl-payments", data),
+  getStatus: (referenceId: string) =>
+    api.get<APIResponse<IPLPaymentInitiation & { status: string }>>(`/ipl-payments/${referenceId}/status`),
 };
 
 // ============ Activity Logs ============

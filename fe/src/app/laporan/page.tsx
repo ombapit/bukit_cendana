@@ -5,10 +5,11 @@ import Link from "next/link";
 import { financeService } from "@/lib/services";
 import { PublicNavbar } from "@/components/public-navbar";
 import { PublicFooter } from "@/components/public-footer";
+import { SkeletonList } from "@/components/ui/skeleton";
 import type { Finance, FinanceSummary } from "@/types";
 import {
   TrendingUp, TrendingDown, Wallet, ChevronLeft, ChevronRight,
-  Search, Loader2, ArrowLeft,
+  Search, ArrowLeft,
 } from "lucide-react";
 
 const bulanIndo: Record<string, string> = {
@@ -182,9 +183,7 @@ export default function LaporanPage() {
 
         {/* Data */}
         {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-red-700" />
-          </div>
+          <SkeletonList rows={5} />
         ) : records.length === 0 ? (
           <div className="glass rounded-2xl p-12 text-center text-gray-400 dark:text-gray-500 text-sm">
             Tidak ada data transaksi

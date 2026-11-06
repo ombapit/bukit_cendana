@@ -6,6 +6,7 @@ import { exportXLS } from "@/lib/export";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Button } from "@/components/ui/button";
+import { SkeletonTable } from "@/components/ui/skeleton";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
 import type { Finance, FinanceSummary } from "@/types";
@@ -719,9 +720,7 @@ export default function FinancePage() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-red-700" />
-        </div>
+        <SkeletonTable rows={7} columns={7} />
       ) : (
         <>
           {/* Mobile: cards */}

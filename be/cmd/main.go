@@ -46,6 +46,7 @@ func main() {
 		&models.IPL{},
 		&models.Finance{},
 		&models.Pengumuman{},
+		&models.PengumumanKategori{},
 		&models.ActivityLog{},
 		&models.IPLPaymentReq{},
 		&models.PenerimaQurban{},
@@ -70,6 +71,7 @@ func main() {
 	iplPaymentRepo := repositories.NewIPLPaymentRepository(db)
 	financeRepo := repositories.NewFinanceRepository(db)
 	pengumumanRepo := repositories.NewPengumumanRepository(db)
+	pengumumanKategoriRepo := repositories.NewPengumumanKategoriRepository(db)
 	qurbanRepo := repositories.NewQurbanRepository(db)
 	penerimaQurbanRepo := repositories.NewPenerimaQurbanRepository(db)
 	anggotaKeluargaRepo := repositories.NewAnggotaKeluargaRepository(db)
@@ -87,6 +89,7 @@ func main() {
 	ipaymuService := services.NewIPaymuService(cfg.IPaymu)
 	iplPaymentService := services.NewIPLPaymentService(iplPaymentRepo, wargaRepo, ipaymuService, iplService)
 	pengumumanService := services.NewPengumumanService(pengumumanRepo)
+	pengumumanKategoriService := services.NewPengumumanKategoriService(pengumumanKategoriRepo)
 	qurbanService := services.NewQurbanService(qurbanRepo)
 	penerimaQurbanService := services.NewPenerimaQurbanService(penerimaQurbanRepo)
 	anggotaKeluargaService := services.NewAnggotaKeluargaService(anggotaKeluargaRepo)
@@ -107,6 +110,7 @@ func main() {
 	iplPaymentHandler := handlers.NewIPLPaymentHandler(iplPaymentService)
 	financeHandler := handlers.NewFinanceHandler(financeService)
 	pengumumanHandler := handlers.NewPengumumanHandler(pengumumanService)
+	pengumumanKategoriHandler := handlers.NewPengumumanKategoriHandler(pengumumanKategoriService)
 	qurbanHandler := handlers.NewQurbanHandler(qurbanService)
 	penerimaQurbanHandler := handlers.NewPenerimaQurbanHandler(penerimaQurbanService)
 	activityLogHandler := handlers.NewActivityLogHandler(activityLogService)
@@ -131,7 +135,7 @@ func main() {
 	})
 
 	// Setup routes
-	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, anggotaKeluargaHandler, iplHandler, iplPaymentHandler, financeHandler, pengumumanHandler, qurbanHandler, penerimaQurbanHandler, activityLogHandler, authService)
+	routes.Setup(r, cfg, authHandler, userHandler, roleHandler, permHandler, menuHandler, wargaHandler, anggotaKeluargaHandler, iplHandler, iplPaymentHandler, financeHandler, pengumumanHandler, pengumumanKategoriHandler, qurbanHandler, penerimaQurbanHandler, activityLogHandler, authService)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.AppPort)

@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { wargaService, anggotaKeluargaService } from "@/lib/services";
 import { exportWargaXLS, exportWargaPDF } from "@/lib/export";
 import { Button } from "@/components/ui/button";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
 import type { WargaWithLastPayment, AnggotaKeluarga } from "@/types";
@@ -572,9 +574,7 @@ export default function WargaAdminPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-red-700" />
-        </div>
+        <SkeletonTable rows={8} columns={7} />
       ) : (
         <>
           {/* Mobile: cards */}
@@ -877,7 +877,7 @@ export default function WargaAdminPage() {
 
           {anggotaLoading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+              <div className="space-y-2 w-full"><Skeleton className="h-4 w-2/3" /><Skeleton className="h-4 w-1/2" /></div>
             </div>
           ) : anggotaList.length === 0 ? (
             <p className="text-center text-gray-400 dark:text-gray-500 text-sm py-6">

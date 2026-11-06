@@ -4,11 +4,12 @@ import { useEffect, useState, useCallback } from "react";
 import { wargaService } from "@/lib/services";
 import { Table } from "@/components/ui/table";
 import type { WargaWithLastPayment } from "@/types";
-import { Search, Loader2, ArrowLeft } from "lucide-react";
+import { Search, ArrowLeft } from "lucide-react";
 import { useLocale } from "@/contexts/locale-context";
 import { PublicNavbar } from "@/components/public-navbar";
 import { PublicFooter } from "@/components/public-footer";
 import Link from "next/link";
+import { SkeletonList } from "@/components/ui/skeleton";
 
 const bulanIndonesia: Record<string, string> = {
   "01": "Januari",
@@ -81,6 +82,7 @@ export default function WargaPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [blokFilter, setBlokFilter] = useState("");
+  const [agamaFilter, setAgamaFilter] = useState("");
   const [tunggakanFilter, setTunggakanFilter] = useState("");
   const [kondisiFilter, setKondisiFilter] = useState("");
 
@@ -105,6 +107,7 @@ export default function WargaPage() {
 
   const allBlocksSource = allWarga.length > 0 ? allWarga : warga;
   const allBlocks = [...new Set(allBlocksSource.map((w) => w.blok.split("/")[0].trim()))].sort();
+  const allAgama = [...new Set(allBlocksSource.map((w) => (w.agama || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "id"));
 
   const matchesClientFilters = (w: WargaWithLastPayment) => {
     const matchSearch =
@@ -112,8 +115,9 @@ export default function WargaPage() {
       w.nama.toLowerCase().includes(search.toLowerCase()) ||
       w.blok.toLowerCase().includes(search.toLowerCase());
     const matchBlok = !blokFilter || w.blok.startsWith(blokFilter);
+    const matchAgama = !agamaFilter || (w.agama || "").trim() === agamaFilter;
     const matchKondisi = !kondisiFilter || (w.kondisi_rumah || "") === kondisiFilter;
-    return matchSearch && matchBlok && matchKondisi;
+    return matchSearch && matchBlok && matchAgama && matchKondisi;
   };
 
   const filteredWarga = warga
@@ -229,6 +233,16 @@ export default function WargaPage() {
             ))}
           </select>
           <select
+            value={agamaFilter}
+            onChange={(e) => setAgamaFilter(e.target.value)}
+            className="min-w-0 lg:w-auto px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white"
+          >
+            <option value="">Semua Agama</option>
+            {allAgama.map((agama) => (
+              <option key={agama} value={agama}>{agama}</option>
+            ))}
+          </select>
+          <select
             value={tunggakanFilter}
             onChange={(e) => setTunggakanFilter(e.target.value)}
             className="min-w-0 lg:w-auto px-3 py-2 text-sm border border-white/30 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white"
@@ -252,9 +266,7 @@ export default function WargaPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-red-700" />
-          </div>
+          <SkeletonList rows={5} />
         ) : (
           <>
             {/* Mobile & tablet: card list */}

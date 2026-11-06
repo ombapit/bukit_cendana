@@ -27,6 +27,26 @@ func (r *PengumumanRepository) FindByID(id uuid.UUID) (*models.Pengumuman, error
 	return &p, err
 }
 
+func (r *PengumumanRepository) FindBySlug(slug string, publishedOnly bool) (*models.Pengumuman, error) {
+	var p models.Pengumuman
+	q := r.db.Where("slug = ?", slug)
+	if publishedOnly {
+		q = q.Where("is_published = true")
+	}
+	err := q.First(&p).Error
+	return &p, err
+}
+
+func (r *PengumumanRepository) SlugExists(slug string, excludeID *uuid.UUID) bool {
+	q := r.db.Model(&models.Pengumuman{}).Where("slug = ?", slug)
+	if excludeID != nil {
+		q = q.Where("id <> ?", *excludeID)
+	}
+	var count int64
+	q.Count(&count)
+	return count > 0
+}
+
 func (r *PengumumanRepository) FindAll(page, limit int, search, kategori string, publishedOnly bool) ([]models.Pengumuman, int64, error) {
 	var results []models.Pengumuman
 	var total int64
@@ -57,6 +77,7 @@ func (r *PengumumanRepository) FindAll(page, limit int, search, kategori string,
 func (r *PengumumanRepository) Update(p *models.Pengumuman) error {
 	return r.db.Model(p).Updates(map[string]interface{}{
 		"judul":           p.Judul,
+		"slug":            p.Slug,
 		"konten":          p.Konten,
 		"gambar":          p.Gambar,
 		"kategori":        p.Kategori,

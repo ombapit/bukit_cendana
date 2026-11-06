@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { qurbanService, penerimaQurbanService } from "@/lib/services";
 import { Button } from "@/components/ui/button";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Modal } from "@/components/ui/modal";
 import { Table } from "@/components/ui/table";
 import { QRScanner } from "@/components/ui/qr-scanner";
@@ -524,9 +526,7 @@ export default function QurbanPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-red-700" />
-        </div>
+        <SkeletonTable rows={7} columns={6} />
       ) : (
         <>
           <div className="lg:hidden space-y-3">
@@ -675,7 +675,7 @@ export default function QurbanPage() {
             </div>
             {wargaLoading ? (
               <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
-                <Loader2 className="w-4 h-4 animate-spin" /> Memuat daftar warga...
+                <div className="space-y-2 w-full"><Skeleton className="h-4 w-2/3" /><Skeleton className="h-4 w-1/2" /></div>
               </div>
             ) : (
               <WargaCombobox
