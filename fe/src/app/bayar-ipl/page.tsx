@@ -16,11 +16,22 @@ function monthCount(start: string, end: string) {
   return count > 0 ? count : 0;
 }
 
+function nextUnpaidMonth(lastPayment: string) {
+  if (!lastPayment || lastPayment.length !== 6) return "";
+  const year = Number(lastPayment.slice(0, 4));
+  const month = Number(lastPayment.slice(4, 6));
+  const next = new Date(year, month, 1);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export default function BayarIPLPage() {
   const [warga, setWarga] = useState<WargaWithLastPayment[]>([]);
   const [wargaId, setWargaId] = useState("");
+  const [wargaSearch, setWargaSearch] = useState("");
+  const [wargaPickerOpen, setWargaPickerOpen] = useState(false);
   const [tanggalIPL, setTanggalIPL] = useState("");
   const [tanggalIPLEnd, setTanggalIPLEnd] = useState("");
+  const [minimumPeriod, setMinimumPeriod] = useState("");
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
@@ -33,6 +44,10 @@ export default function BayarIPLPage() {
   }, []);
 
   const selectedWarga = warga.find((item) => item.id === wargaId);
+  const filteredWarga = warga.filter((item) => {
+    const query = wargaSearch.trim().toLowerCase();
+    return !query || item.nama.toLowerCase().includes(query) || item.blok.toLowerCase().includes(query);
+  }).slice(0, 50);
   const jumlahBulan = monthCount(tanggalIPL, tanggalIPLEnd);
   const total = selectedWarga && jumlahBulan > 0 ? selectedWarga.iuran * jumlahBulan : 0;
   const canPay = Boolean(selectedWarga && tanggalIPL && tanggalIPLEnd && jumlahBulan > 0 && total > 0 && !paying);
@@ -70,14 +85,39 @@ export default function BayarIPLPage() {
           {error && <div className="mb-4 rounded-lg bg-red-500/10 text-red-700 dark:text-red-400 px-3 py-2 text-sm">{error}</div>}
           <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama / Blok
-              <select value={wargaId} onChange={(e) => setWargaId(e.target.value)} disabled={loading} className="mt-1 w-full px-3 py-2.5 rounded-lg border border-white/30 dark:border-white/10 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white">
-                <option value="">{loading ? "Memuat data warga..." : "Pilih nama dan blok"}</option>
-                {warga.map((item) => <option key={item.id} value={item.id}>{item.nama} — {item.blok}</option>)}
-              </select>
+              <div className="relative mt-1">
+                <input
+                  type="text"
+                  value={selectedWarga && !wargaPickerOpen ? `${selectedWarga.nama} — ${selectedWarga.blok}` : wargaSearch}
+                  onChange={(e) => { setWargaSearch(e.target.value); setWargaId(""); setWargaPickerOpen(true); }}
+                  onFocus={() => { setWargaSearch(""); setWargaPickerOpen(true); }}
+                  onBlur={() => setTimeout(() => setWargaPickerOpen(false), 150)}
+                  placeholder={loading ? "Memuat data warga..." : "Cari nama atau blok..."}
+                  disabled={loading}
+                  className="w-full px-3 py-2.5 rounded-lg border border-white/30 dark:border-white/10 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white placeholder:text-gray-400"
+                />
+                {wargaPickerOpen && !loading && (
+                  <div className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-white/30 dark:border-white/10 bg-white dark:bg-slate-800 shadow-xl">
+                    {filteredWarga.length > 0 ? filteredWarga.map((item) => (
+                      <button key={item.id} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => {
+                        const firstUnpaid = nextUnpaidMonth(item.last_payment);
+                        setWargaId(item.id);
+                        setWargaSearch("");
+                        setWargaPickerOpen(false);
+                        setMinimumPeriod(firstUnpaid);
+                        setTanggalIPL(firstUnpaid);
+                        setTanggalIPLEnd(firstUnpaid);
+                      }} className="block w-full px-3 py-2 text-left text-sm text-gray-900 dark:text-white hover:bg-red-700/10 dark:hover:bg-white/10">
+                        {item.nama} <span className="text-gray-500 dark:text-gray-400">— {item.blok}</span>
+                      </button>
+                    )) : <p className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">Warga tidak ditemukan</p>}
+                  </div>
+                )}
+              </div>
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Dari bulan<input type="month" value={tanggalIPL} onChange={(e) => setTanggalIPL(e.target.value)} className="mt-1 w-full px-3 py-2.5 rounded-lg border border-white/30 dark:border-white/10 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white" /></label>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Sampai bulan<input type="month" value={tanggalIPLEnd} onChange={(e) => setTanggalIPLEnd(e.target.value)} className="mt-1 w-full px-3 py-2.5 rounded-lg border border-white/30 dark:border-white/10 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white" /></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Dari bulan<input type="month" min={minimumPeriod || undefined} value={tanggalIPL} onChange={(e) => { setTanggalIPL(e.target.value); if (tanggalIPLEnd < e.target.value) setTanggalIPLEnd(e.target.value); }} className="mt-1 w-full px-3 py-2.5 rounded-lg border border-white/30 dark:border-white/10 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white" /></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Sampai bulan<input type="month" min={tanggalIPL || minimumPeriod || undefined} value={tanggalIPLEnd} onChange={(e) => setTanggalIPLEnd(e.target.value)} className="mt-1 w-full px-3 py-2.5 rounded-lg border border-white/30 dark:border-white/10 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white" /></label>
             </div>
             <div className="rounded-xl bg-red-700/5 dark:bg-red-700/10 p-4 flex items-center justify-between"><div><p className="text-xs text-gray-500 dark:text-gray-400">Total pembayaran</p><p className="text-xl font-bold text-gray-900 dark:text-white">{formattedTotal}</p></div><p className="text-sm text-gray-500 dark:text-gray-400">{jumlahBulan} bulan</p></div>
             <button type="button" onClick={handlePay} disabled={!canPay} className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-red-700 px-4 py-3 font-medium text-white hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed">{paying && <Loader2 className="w-4 h-4 animate-spin" />} Bayar sekarang</button>
